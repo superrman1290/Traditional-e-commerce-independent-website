@@ -1,0 +1,41 @@
+{
+  "name": "traditional-ecommerce-independent-website",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Single-merchant B2C ecommerce independent website monorepo.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "node scripts/run-dev.mjs",
+    "lint": "eslint .",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "playwright test",
+    "build": "npm run build --workspaces --if-present",
+    "prisma:generate": "npm run prisma:generate -w @ecommerce/database",
+    "prisma:migrate": "npm run prisma:migrate -w @ecommerce/database"
+  },
+  "engines": {
+    "node": ">=20.11.0",
+    "npm": ">=10.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@next/eslint-plugin-next": "^15.5.20",
+    "@next/swc-win32-x64-msvc": "^15.5.20",
+    "@playwright/test": "^1.49.0",
+    "@rollup/rollup-win32-x64-msvc": "^4.62.2",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "effect": "^3.21.0",
+    "eslint": "^9.20.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.24.0",
+    "vitest": "^3.0.0"
+  }
+}
