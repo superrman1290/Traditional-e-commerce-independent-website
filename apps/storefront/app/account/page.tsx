@@ -43,12 +43,37 @@ type Order = {
   } | null;
 };
 
+type Favorite = {
+  id: string;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    summary: string | null;
+    images: Array<{ url: string; altText: string | null }>;
+    skus: Array<{ price: string; availableStock: number }>;
+  };
+};
+
+type AfterSaleRequest = {
+  id: string;
+  orderNo: string;
+  type: "REFUND" | "RETURN_REFUND";
+  status: "REQUESTED" | "APPROVED" | "REJECTED" | "COMPLETED";
+  amount: string;
+  reason: string;
+  adminNote: string | null;
+  createdAt: string;
+};
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [afterSales, setAfterSales] = useState<AfterSaleRequest[]>([]);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -72,11 +97,15 @@ export default function AccountPage() {
       setUser((await response.json()) as User);
       await loadAddresses(token);
       await loadOrders(token);
+      await loadFavorites(token);
+      await loadAfterSales(token);
     } else {
       localStorage.removeItem("authToken");
       setUser(null);
       setAddresses([]);
       setOrders([]);
+      setFavorites([]);
+      setAfterSales([]);
     }
   }
 
@@ -105,6 +134,34 @@ export default function AccountPage() {
 
     if (response.ok) {
       setOrders((await response.json()) as Order[]);
+    }
+  }
+
+  async function loadFavorites(token = localStorage.getItem("authToken")) {
+    if (!token) {
+      return;
+    }
+
+    const response = await fetch(`${apiUrl}/favorites`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      setFavorites((await response.json()) as Favorite[]);
+    }
+  }
+
+  async function loadAfterSales(token = localStorage.getItem("authToken")) {
+    if (!token) {
+      return;
+    }
+
+    const response = await fetch(`${apiUrl}/after-sales`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      setAfterSales((await response.json()) as AfterSaleRequest[]);
     }
   }
 
@@ -161,10 +218,60 @@ export default function AccountPage() {
     }
   }
 
+  async function removeFavorite(productId: string) {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      return;
+    }
+
+    const response = await fetch(`${apiUrl}/favorites/${productId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      setMessage("Favorite removed.");
+      await loadFavorites(token);
+    }
+  }
+
+  async function submitAfterSale(event: FormEvent<HTMLFormElement>, order: Order) {
+    event.preventDefault();
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    const response = await fetch(`${apiUrl}/after-sales`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        orderId: order.id,
+        type: String(form.get("type") ?? "REFUND"),
+        amount: String(form.get("amount") ?? order.totalAmount),
+        reason: String(form.get("reason") ?? ""),
+        returnTrackingNumber: String(form.get("returnTrackingNumber") ?? "")
+      })
+    });
+
+    setMessage(response.ok ? "After-sales request submitted." : "Could not submit after-sales request.");
+    if (response.ok) {
+      event.currentTarget.reset();
+      await loadAfterSales(token);
+    }
+  }
+
   function logout() {
     localStorage.removeItem("authToken");
     setUser(null);
     setAddresses([]);
+    setOrders([]);
+    setFavorites([]);
+    setAfterSales([]);
     setMessage("Signed out.");
     window.dispatchEvent(new Event(authChangedEvent));
   }
@@ -175,7 +282,7 @@ export default function AccountPage() {
 
       <section className="accountLayout">
         <div className="detailPanel">
-          <span>Stage 5</span>
+          <span>Stage 6</span>
           <h1>{user ? "Account" : "Guest account"}</h1>
           {user ? (
             <>
@@ -296,11 +403,71 @@ export default function AccountPage() {
                   ) : order.status === "PAID" ? (
                     <p className="mutedCopy">Awaiting shipment.</p>
                   ) : null}
+                  {["PAID", "SHIPPED", "COMPLETED"].includes(order.status) ? (
+                    <form className="afterSaleForm" onSubmit={(event) => void submitAfterSale(event, order)}>
+                      <select name="type" aria-label={`After-sale type for ${order.orderNo}`}>
+                        <option value="REFUND">Refund</option>
+                        <option value="RETURN_REFUND">Return and refund</option>
+                      </select>
+                      <input name="amount" placeholder="Amount" defaultValue={order.totalAmount} />
+                      <input name="returnTrackingNumber" placeholder="Return tracking number" />
+                      <input className="fullSpan" name="reason" placeholder="Reason" required />
+                      <button type="submit">Submit after-sales</button>
+                    </form>
+                  ) : null}
                 </article>
               ))}
             </div>
           ) : (
             <p>Login to view order logistics.</p>
+          )}
+        </div>
+
+        <div className="detailPanel">
+          <span>Favorites</span>
+          <h2>Saved products</h2>
+          {user ? (
+            <div className="favoriteList">
+              {favorites.map((favorite) => (
+                <article className="favoriteItem" key={favorite.id}>
+                  <div>
+                    <a href={`/products/${favorite.product.slug}`}>
+                      <strong>{favorite.product.name}</strong>
+                    </a>
+                    <span>{favorite.product.summary ?? "No summary"}</span>
+                  </div>
+                  <strong>CNY {favorite.product.skus[0]?.price ?? "0.00"}</strong>
+                  <button type="button" onClick={() => void removeFavorite(favorite.product.id)}>
+                    Remove
+                  </button>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p>Login to view favorites.</p>
+          )}
+        </div>
+
+        <div className="detailPanel">
+          <span>After-sales</span>
+          <h2>Requests</h2>
+          {user ? (
+            <div className="afterSaleList">
+              {afterSales.map((request) => (
+                <article className="addressItem" key={request.id}>
+                  <strong>
+                    {request.orderNo} / {request.type}
+                  </strong>
+                  <span>
+                    {request.status} / CNY {request.amount}
+                  </span>
+                  <span>{request.reason}</span>
+                  {request.adminNote ? <span>{request.adminNote}</span> : null}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p>Login to view after-sales requests.</p>
           )}
         </div>
       </section>

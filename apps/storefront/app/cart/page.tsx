@@ -33,6 +33,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 export default function CartPage() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [message, setMessage] = useState("");
+  const [reminderEmail, setReminderEmail] = useState("");
 
   useEffect(() => {
     void loadCart();
@@ -98,6 +99,20 @@ export default function CartPage() {
     }
   }
 
+  async function createReminder() {
+    const headers = await getHeaders();
+    const response = await fetch(`${apiUrl}/cart/reminders`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        email: reminderEmail.trim() || undefined,
+        guestSessionId: localStorage.getItem("guestSessionId") ?? undefined
+      })
+    });
+
+    setMessage(response.ok ? "Cart reminder scheduled." : "Could not schedule cart reminder.");
+  }
+
   return (
     <main className="shell">
       <SiteNav />
@@ -161,6 +176,15 @@ export default function CartPage() {
       {cart?.items.length ? (
         <footer className="cartFooter">
           <span>{cart.canCheckout ? "Cart is ready for checkout." : "Resolve price or stock issues first."}</span>
+          <input
+            aria-label="Reminder email"
+            placeholder="Reminder email"
+            value={reminderEmail}
+            onChange={(event) => setReminderEmail(event.target.value)}
+          />
+          <button type="button" onClick={() => void createReminder()}>
+            Remind me
+          </button>
           {cart.canCheckout ? (
             <a className="detailLink" href="/checkout">
               Checkout

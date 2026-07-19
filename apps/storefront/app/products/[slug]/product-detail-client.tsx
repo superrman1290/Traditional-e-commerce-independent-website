@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SiteNav } from "../../components/site-nav";
 
 type Product = {
+  id: string;
   name: string;
   slug: string;
   summary: string | null;
@@ -32,6 +33,7 @@ export function ProductDetailClient({ slug }: { slug: string }) {
   const [quantity, setQuantity] = useState(1);
   const [cartMessage, setCartMessage] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const [favoriteMessage, setFavoriteMessage] = useState("");
 
   useEffect(() => {
     async function loadProduct() {
@@ -99,6 +101,29 @@ export function ProductDetailClient({ slug }: { slug: string }) {
     }
   }
 
+  async function addFavorite() {
+    if (!product) {
+      return;
+    }
+
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      setFavoriteMessage("Login to save favorites.");
+      return;
+    }
+
+    const response = await fetch(`${apiUrl}/favorites`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ productId: product.id })
+    });
+
+    setFavoriteMessage(response.ok ? "Saved to favorites." : "Could not save favorite.");
+  }
+
   if (!product) {
     return (
       <main className="shell">
@@ -159,8 +184,12 @@ export function ProductDetailClient({ slug }: { slug: string }) {
             <button disabled={!selectedSku || isAdding} type="button" onClick={() => void addToCart()}>
               {isAdding ? "Adding..." : "Add to cart"}
             </button>
+            <button type="button" onClick={() => void addFavorite()}>
+              Favorite
+            </button>
           </div>
           {cartMessage ? <p className="formMessage">{cartMessage}</p> : null}
+          {favoriteMessage ? <p className="formMessage">{favoriteMessage}</p> : null}
 
           <dl className="specList">
             {selectedSku

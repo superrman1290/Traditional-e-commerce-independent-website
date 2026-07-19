@@ -250,7 +250,9 @@ a {
   margin-top: 8px;
 }
 
-input {
+input,
+select,
+textarea {
   border: 1px solid #c9d4cb;
   border-radius: 6px;
   font: inherit;
@@ -262,6 +264,12 @@ input {
 input[type="number"] {
   min-width: 96px;
   width: 110px;
+}
+
+textarea {
+  min-height: 120px;
+  padding: 12px 14px;
+  resize: vertical;
 }
 
 .categoryTabs {
@@ -624,6 +632,74 @@ mark {
   gap: 12px;
 }
 
+.favoriteList,
+.afterSaleList,
+.faqList {
+  display: grid;
+  gap: 12px;
+}
+
+.favoriteItem {
+  align-items: center;
+  border: 1px solid #dfe6dc;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  padding: 14px;
+}
+
+.favoriteItem div {
+  display: grid;
+  gap: 4px;
+}
+
+.favoriteItem span {
+  color: #53645a;
+}
+
+.afterSaleForm {
+  border-top: 1px solid #dfe6dc;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  padding-top: 14px;
+}
+
+.supportLayout {
+  align-items: start;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+  margin-top: 28px;
+}
+
+.offerGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.offerCard,
+.faqList article {
+  border: 1px solid #dfe6dc;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.offerCard h3,
+.offerCard p,
+.faqList p {
+  margin: 0;
+}
+
+.offerCard span,
+.offerCard small {
+  color: #53645a;
+}
+
 .checkoutLayout {
   align-items: start;
   display: grid;
@@ -819,14 +895,17 @@ mark {
   .detailLayout,
   .accountLayout,
   .checkoutLayout,
-  .paymentLayout {
+  .paymentLayout,
+  .supportLayout {
     grid-template-columns: 1fr;
   }
 
   .couponRow,
   .summaryItems article,
   .paymentHistory article,
-  .orderMeta {
+  .orderMeta,
+  .favoriteItem,
+  .afterSaleForm {
     grid-template-columns: 1fr;
   }
 
@@ -836,6 +915,12 @@ mark {
   }
 
   input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  select,
+  textarea {
     min-width: 0;
     width: 100%;
   }

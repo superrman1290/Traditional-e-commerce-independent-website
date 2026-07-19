@@ -195,6 +195,66 @@ async function main() {
       isActive: true
     }
   });
+
+  const now = new Date();
+  const endsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  await prisma.coupon.upsert({
+    where: { code: "LIMITED26" },
+    update: {
+      name: "Stage 6 limited discount",
+      type: DiscountType.PERCENTAGE,
+      amount: "12.00",
+      minSubtotal: "100.00",
+      usageLimit: 50,
+      startsAt: now,
+      endsAt,
+      isActive: true
+    },
+    create: {
+      code: "LIMITED26",
+      name: "Stage 6 limited discount",
+      type: DiscountType.PERCENTAGE,
+      amount: "12.00",
+      minSubtotal: "100.00",
+      usageLimit: 50,
+      startsAt: now,
+      endsAt,
+      isActive: true
+    }
+  });
+
+  for (const [index, faq] of [
+    {
+      question: "How do I request a refund?",
+      answer: "Open Account, find the paid order, and submit an after-sales request with the amount and reason."
+    },
+    {
+      question: "How do return refunds work?",
+      answer: "Choose return and refund, add the return tracking number when available, and wait for admin review."
+    },
+    {
+      question: "How do coupons work?",
+      answer: "Enter the coupon code during checkout. Eligible full reduction and limited discount coupons are shown on Support."
+    }
+  ].entries()) {
+    await prisma.faqEntry.upsert({
+      where: { id: `00000000-0000-4000-8000-00000000040${index + 1}` },
+      update: {
+        question: faq.question,
+        answer: faq.answer,
+        sortOrder: index + 1,
+        isActive: true
+      },
+      create: {
+        id: `00000000-0000-4000-8000-00000000040${index + 1}`,
+        question: faq.question,
+        answer: faq.answer,
+        sortOrder: index + 1,
+        isActive: true
+      }
+    });
+  }
 }
 
 main()

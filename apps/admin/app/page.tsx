@@ -30,6 +30,53 @@ type ShipmentForm = {
   trackingUrl: string;
 };
 
+type AfterSaleRequest = {
+  id: string;
+  orderNo: string;
+  userEmail: string;
+  type: "REFUND" | "RETURN_REFUND";
+  status: "REQUESTED" | "APPROVED" | "REJECTED" | "COMPLETED";
+  amount: string;
+  reason: string;
+  adminNote: string | null;
+  createdAt: string;
+  refundStatus: string | null;
+};
+
+type MarketingRecords = {
+  contacts: Array<{
+    id: string;
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    status: "NEW" | "READ" | "REPLIED";
+    createdAt: string;
+  }>;
+  subscriptions: Array<{
+    id: string;
+    email: string;
+    source: string | null;
+    isActive: boolean;
+    createdAt: string;
+  }>;
+  reminders: Array<{
+    id: string;
+    email: string | null;
+    status: "PENDING" | "SENT" | "SKIPPED";
+    scheduledAt: string;
+    itemCount: number;
+    userEmail: string | null;
+  }>;
+  faqs: Array<{
+    id: string;
+    question: string;
+    answer: string;
+    isActive: boolean;
+    sortOrder: number;
+  }>;
+};
+
 type Order = {
   id: string;
   orderNo: string;
@@ -87,6 +134,13 @@ const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhos
 export default function AdminHomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [afterSales, setAfterSales] = useState<AfterSaleRequest[]>([]);
+  const [marketing, setMarketing] = useState<MarketingRecords>({
+    contacts: [],
+    subscriptions: [],
+    reminders: [],
+    faqs: []
+  });
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shipmentForms, setShipmentForms] = useState<Record<string, ShipmentForm>>({});
@@ -127,8 +181,22 @@ export default function AdminHomePage() {
     }
   }
 
+  async function loadAfterSales() {
+    const response = await fetch(`${apiUrl}/admin/after-sales`);
+    if (response.ok) {
+      setAfterSales((await response.json()) as AfterSaleRequest[]);
+    }
+  }
+
+  async function loadMarketing() {
+    const response = await fetch(`${apiUrl}/admin/marketing`);
+    if (response.ok) {
+      setMarketing((await response.json()) as MarketingRecords);
+    }
+  }
+
   async function refreshAll() {
-    await Promise.all([loadProducts(), loadOrders()]);
+    await Promise.all([loadProducts(), loadOrders(), loadAfterSales(), loadMarketing()]);
   }
 
   useEffect(() => {
@@ -149,9 +217,19 @@ export default function AdminHomePage() {
     const paidOrders = orders.filter((order) => order.status === "PAID").length;
     const shippedOrders = orders.filter((order) => order.status === "SHIPPED").length;
     const completedOrders = orders.filter((order) => order.status === "COMPLETED").length;
+    const requestedAfterSales = afterSales.filter((request) => request.status === "REQUESTED").length;
 
-    return { skuCount, availableStock, lockedStock, pendingOrders, paidOrders, shippedOrders, completedOrders };
-  }, [orders, products]);
+    return {
+      skuCount,
+      availableStock,
+      lockedStock,
+      pendingOrders,
+      paidOrders,
+      shippedOrders,
+      completedOrders,
+      requestedAfterSales
+    };
+  }, [afterSales, orders, products]);
 
   async function createProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -256,6 +334,28 @@ export default function AdminHomePage() {
     await refreshAll();
   }
 
+  async function updateAfterSale(requestId: string, status: AfterSaleRequest["status"]) {
+    const response = await fetch(`${apiUrl}/admin/after-sales/${requestId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, adminNote: `Admin marked ${status.toLowerCase()}` })
+    });
+
+    setMessage(response.ok ? "After-sales request updated." : "After-sales request could not be updated.");
+    await refreshAll();
+  }
+
+  async function updateContactStatus(contactId: string, status: "NEW" | "READ" | "REPLIED") {
+    const response = await fetch(`${apiUrl}/admin/contact-messages/${contactId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+
+    setMessage(response.ok ? "Contact message updated." : "Contact message could not be updated.");
+    await loadMarketing();
+  }
+
   return (
     <main className="shell">
       <aside className="sidebar">
@@ -263,14 +363,16 @@ export default function AdminHomePage() {
         <a href="#products">Products</a>
         <a href="#inventory">Inventory</a>
         <a href="#orders">Orders</a>
+        <a href="#after-sales">After-sales</a>
+        <a href="#marketing">Marketing</a>
         <a href={storefrontUrl}>Storefront</a>
       </aside>
 
       <section className="workspace">
         <header className="pageHeader">
           <div>
-            <p>Stage 5</p>
-            <h1>Catalog, Inventory And Shipping</h1>
+            <p>Stage 6</p>
+            <h1>Catalog, Orders And Marketing</h1>
           </div>
           <button type="button" onClick={() => void refreshAll()}>
             Refresh
@@ -305,6 +407,14 @@ export default function AdminHomePage() {
           <article>
             <span>Completed orders</span>
             <strong>{totals.completedOrders}</strong>
+          </article>
+          <article>
+            <span>After-sales</span>
+            <strong>{totals.requestedAfterSales}</strong>
+          </article>
+          <article>
+            <span>Contacts</span>
+            <strong>{marketing.contacts.length}</strong>
           </article>
         </div>
 
@@ -502,6 +612,141 @@ export default function AdminHomePage() {
               </div>
             </article>
           ))}
+        </section>
+
+        <section className="table" id="after-sales" aria-label="After-sales management">
+          <div className="sectionHeader">
+            <div>
+              <p>Refund and return requests</p>
+              <h2>After-sales</h2>
+            </div>
+          </div>
+
+          {afterSales.map((request) => (
+            <article key={request.id}>
+              <div className="productRow">
+                <div>
+                  <span>{request.status}</span>
+                  <h2>{request.orderNo}</h2>
+                  <small>
+                    {request.userEmail} / {new Date(request.createdAt).toLocaleString()}
+                  </small>
+                </div>
+                <div className="actions">
+                  <strong>
+                    {request.type} CNY {request.amount}
+                  </strong>
+                  <button type="button" onClick={() => void updateAfterSale(request.id, "APPROVED")}>
+                    Approve
+                  </button>
+                  <button type="button" onClick={() => void updateAfterSale(request.id, "REJECTED")}>
+                    Reject
+                  </button>
+                  <button type="button" onClick={() => void updateAfterSale(request.id, "COMPLETED")}>
+                    Complete
+                  </button>
+                </div>
+              </div>
+              <div className="adminNote">
+                <strong>{request.reason}</strong>
+                <span>{request.adminNote ?? "No admin note"}</span>
+                <span>{request.refundStatus ? `Refund ${request.refundStatus}` : "No refund record linked"}</span>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section className="table" id="marketing" aria-label="Marketing management">
+          <div className="sectionHeader">
+            <div>
+              <p>Contacts, subscriptions, reminders and FAQ</p>
+              <h2>Marketing</h2>
+            </div>
+          </div>
+
+          <article>
+            <div className="productRow">
+              <div>
+                <span>Contact form</span>
+                <h2>Messages</h2>
+              </div>
+            </div>
+            <div className="marketingTable">
+              {marketing.contacts.map((contact) => (
+                <div key={contact.id}>
+                  <strong>{contact.subject}</strong>
+                  <span>
+                    {contact.name} / {contact.email}
+                  </span>
+                  <span>{contact.message}</span>
+                  <span>{contact.status}</span>
+                  <button type="button" onClick={() => void updateContactStatus(contact.id, "READ")}>
+                    Mark read
+                  </button>
+                  <button type="button" onClick={() => void updateContactStatus(contact.id, "REPLIED")}>
+                    Mark replied
+                  </button>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article>
+            <div className="productRow">
+              <div>
+                <span>Email subscriptions</span>
+                <h2>Newsletter</h2>
+              </div>
+            </div>
+            <div className="marketingTable compact">
+              {marketing.subscriptions.map((subscription) => (
+                <div key={subscription.id}>
+                  <strong>{subscription.email}</strong>
+                  <span>{subscription.source ?? "storefront"}</span>
+                  <span>{subscription.isActive ? "Active" : "Inactive"}</span>
+                  <span>{new Date(subscription.createdAt).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article>
+            <div className="productRow">
+              <div>
+                <span>Abandoned cart reminders</span>
+                <h2>Cart reminders</h2>
+              </div>
+            </div>
+            <div className="marketingTable compact">
+              {marketing.reminders.map((reminder) => (
+                <div key={reminder.id}>
+                  <strong>{reminder.email ?? reminder.userEmail ?? "No email"}</strong>
+                  <span>{reminder.status}</span>
+                  <span>{reminder.itemCount} item(s)</span>
+                  <span>{new Date(reminder.scheduledAt).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article>
+            <div className="productRow">
+              <div>
+                <span>Frequently asked questions</span>
+                <h2>FAQ</h2>
+              </div>
+            </div>
+            <div className="marketingTable compact">
+              {marketing.faqs.map((faq) => (
+                <div key={faq.id}>
+                  <strong>{faq.question}</strong>
+                  <span>{faq.answer}</span>
+                  <span>{faq.isActive ? "Active" : "Inactive"}</span>
+                  <span>Sort {faq.sortOrder}</span>
+                </div>
+              ))}
+            </div>
+          </article>
         </section>
       </section>
     </main>

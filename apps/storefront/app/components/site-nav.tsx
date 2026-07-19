@@ -6,10 +6,10 @@ export function SiteNav() {
       <strong>Traditional Commerce</strong>
       <div className="navLinks">
         <a href="/">Products</a>
+        <a href="/support">Support</a>
         <a href="/cart">Cart</a>
         <AccountMenu />
       </div>
     </nav>
   );
 }
-
