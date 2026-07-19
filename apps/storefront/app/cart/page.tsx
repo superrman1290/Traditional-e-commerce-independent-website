@@ -161,9 +161,15 @@ export default function CartPage() {
       {cart?.items.length ? (
         <footer className="cartFooter">
           <span>{cart.canCheckout ? "Cart is ready for checkout." : "Resolve price or stock issues first."}</span>
-          <button disabled={!cart.canCheckout} type="button">
-            Checkout locked until stage 3
-          </button>
+          {cart.canCheckout ? (
+            <a className="detailLink" href="/checkout">
+              Checkout
+            </a>
+          ) : (
+            <button disabled type="button">
+              Checkout
+            </button>
+          )}
         </footer>
       ) : null}
     </main>

@@ -23,19 +23,39 @@ type Product = {
   }>;
 };
 
+type Order = {
+  id: string;
+  orderNo: string;
+  status: "PENDING_PAYMENT" | "CLOSED";
+  subtotalAmount: string;
+  shippingFee: string;
+  discountAmount: string;
+  totalAmount: string;
+  expiresAt: string;
+  createdAt: string;
+  items: Array<{
+    productName: string;
+    skuName: string;
+    quantity: number;
+    lineTotal: string;
+  }>;
+};
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3000";
 
 export default function AdminHomePage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
-    name: "手作香器",
+    name: "Handmade incense burner",
     slug: "handmade-incense-burner",
-    categoryName: "传统手作",
+    categoryName: "Traditional crafts",
     categorySlug: "traditional-crafts",
     skuCode: "INCENSE-BURNER-BRONZE",
-    skuName: "青铜色",
+    skuName: "Bronze finish",
     price: "189.00",
     stockQuantity: "12"
   });
@@ -45,8 +65,19 @@ export default function AdminHomePage() {
     setProducts(await response.json());
   }
 
+  async function loadOrders() {
+    const response = await fetch(`${apiUrl}/admin/orders`);
+    if (response.ok) {
+      setOrders(await response.json());
+    }
+  }
+
+  async function refreshAll() {
+    await Promise.all([loadProducts(), loadOrders()]);
+  }
+
   useEffect(() => {
-    void loadProducts();
+    void refreshAll();
   }, []);
 
   const totals = useMemo(() => {
@@ -55,15 +86,14 @@ export default function AdminHomePage() {
       (sum, product) => sum + product.skus.reduce((skuSum, sku) => skuSum + sku.availableStock, 0),
       0
     );
-    const lowStockCount = products.reduce(
-      (sum, product) =>
-        sum +
-        product.skus.filter((sku) => sku.availableStock <= sku.lowStockThreshold).length,
+    const lockedStock = products.reduce(
+      (sum, product) => sum + product.skus.reduce((skuSum, sku) => skuSum + sku.lockedStockQuantity, 0),
       0
     );
+    const pendingOrders = orders.filter((order) => order.status === "PENDING_PAYMENT").length;
 
-    return { skuCount, availableStock, lowStockCount };
-  }, [products]);
+    return { skuCount, availableStock, lockedStock, pendingOrders };
+  }, [orders, products]);
 
   async function createProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,8 +103,8 @@ export default function AdminHomePage() {
     const payload = {
       name: form.name,
       slug: form.slug,
-      summary: "后台阶段 1 创建的商品",
-      description: "用于验证商品管理、SKU 规格、库存和上下架。",
+      summary: "Created from the admin catalog form.",
+      description: "Used to validate product, SKU and inventory operations.",
       status: "ACTIVE",
       category: {
         name: form.categoryName,
@@ -88,7 +118,7 @@ export default function AdminHomePage() {
       ],
       options: [
         {
-          name: "颜色",
+          name: "Color",
           values: [form.skuName]
         }
       ],
@@ -96,7 +126,7 @@ export default function AdminHomePage() {
         {
           skuCode: form.skuCode,
           name: form.skuName,
-          optionSignature: { "颜色": form.skuName },
+          optionSignature: { Color: form.skuName },
           price: form.price,
           stockQuantity: Number(form.stockQuantity),
           lowStockThreshold: 3
@@ -110,7 +140,7 @@ export default function AdminHomePage() {
       body: JSON.stringify(payload)
     });
 
-    setMessage(response.ok ? "商品已保存" : "商品保存失败");
+    setMessage(response.ok ? "Product saved." : "Product could not be saved.");
     setIsSubmitting(false);
     await loadProducts();
   }
@@ -128,105 +158,93 @@ export default function AdminHomePage() {
     await fetch(`${apiUrl}/admin/inventory/adjustments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ skuId, quantity, note: "后台手动调整" })
+      body: JSON.stringify({ skuId, quantity, note: "Admin manual adjustment" })
     });
     await loadProducts();
+  }
+
+  async function closeExpiredOrders() {
+    const response = await fetch(`${apiUrl}/admin/orders/expire`, { method: "POST" });
+    const result = response.ok ? ((await response.json()) as { closedCount: number }) : { closedCount: 0 };
+    setMessage(`Closed ${result.closedCount} expired orders.`);
+    await refreshAll();
   }
 
   return (
     <main className="shell">
       <aside className="sidebar">
         <strong>Commerce Admin</strong>
-        <a href="#">商品</a>
-        <a href="#">库存</a>
-        <a href="http://localhost:3000">前台</a>
+        <a href="#products">Products</a>
+        <a href="#inventory">Inventory</a>
+        <a href="#orders">Orders</a>
+        <a href={storefrontUrl}>Storefront</a>
       </aside>
 
       <section className="workspace">
         <header className="pageHeader">
           <div>
-            <p>阶段 1</p>
-            <h1>商品和库存</h1>
+            <p>Stage 3</p>
+            <h1>Catalog, Inventory And Orders</h1>
           </div>
-          <button type="button" onClick={() => void loadProducts()}>
-            刷新
+          <button type="button" onClick={() => void refreshAll()}>
+            Refresh
           </button>
         </header>
 
         <div className="metrics">
           <article>
-            <span>商品数</span>
+            <span>Products</span>
             <strong>{products.length}</strong>
           </article>
           <article>
-            <span>SKU 数</span>
+            <span>SKUs</span>
             <strong>{totals.skuCount}</strong>
           </article>
           <article>
-            <span>可售库存</span>
+            <span>Available stock</span>
             <strong>{totals.availableStock}</strong>
           </article>
           <article>
-            <span>库存预警</span>
-            <strong>{totals.lowStockCount}</strong>
+            <span>Pending orders</span>
+            <strong>{totals.pendingOrders}</strong>
           </article>
         </div>
 
-        <form className="editor" onSubmit={(event) => void createProduct(event)}>
+        <form className="editor" id="products" onSubmit={(event) => void createProduct(event)}>
+          <input aria-label="Product name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
+          <input aria-label="Product slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} />
           <input
-            aria-label="商品名称"
-            value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-          />
-          <input
-            aria-label="商品 slug"
-            value={form.slug}
-            onChange={(event) => setForm({ ...form, slug: event.target.value })}
-          />
-          <input
-            aria-label="分类名称"
+            aria-label="Category name"
             value={form.categoryName}
             onChange={(event) => setForm({ ...form, categoryName: event.target.value })}
           />
           <input
-            aria-label="分类 slug"
+            aria-label="Category slug"
             value={form.categorySlug}
             onChange={(event) => setForm({ ...form, categorySlug: event.target.value })}
           />
+          <input aria-label="SKU code" value={form.skuCode} onChange={(event) => setForm({ ...form, skuCode: event.target.value })} />
+          <input aria-label="SKU name" value={form.skuName} onChange={(event) => setForm({ ...form, skuName: event.target.value })} />
+          <input aria-label="Sale price" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} />
           <input
-            aria-label="SKU 编码"
-            value={form.skuCode}
-            onChange={(event) => setForm({ ...form, skuCode: event.target.value })}
-          />
-          <input
-            aria-label="SKU 名称"
-            value={form.skuName}
-            onChange={(event) => setForm({ ...form, skuName: event.target.value })}
-          />
-          <input
-            aria-label="销售价"
-            value={form.price}
-            onChange={(event) => setForm({ ...form, price: event.target.value })}
-          />
-          <input
-            aria-label="库存"
-            type="number"
+            aria-label="Stock"
             min="0"
+            type="number"
             value={form.stockQuantity}
             onChange={(event) => setForm({ ...form, stockQuantity: event.target.value })}
           />
           <button disabled={isSubmitting} type="submit">
-            保存商品
+            Save product
           </button>
           {message ? <p>{message}</p> : null}
         </form>
 
-        <section className="table" aria-label="商品管理">
+        <section className="table" id="inventory" aria-label="Product management">
           {products.map((product) => (
             <article key={product.id}>
               <div className="productRow">
                 <div>
-                  <span>{product.category?.name ?? "未分类"}</span>
+                  <span>{product.category?.name ?? "Uncategorized"}</span>
                   <h2>{product.name}</h2>
                   <small>{product.slug}</small>
                 </div>
@@ -234,11 +252,9 @@ export default function AdminHomePage() {
                   <strong>{product.status}</strong>
                   <button
                     type="button"
-                    onClick={() =>
-                      void updateStatus(product.id, product.status === "ACTIVE" ? "DRAFT" : "ACTIVE")
-                    }
+                    onClick={() => void updateStatus(product.id, product.status === "ACTIVE" ? "DRAFT" : "ACTIVE")}
                   >
-                    {product.status === "ACTIVE" ? "下架" : "上架"}
+                    {product.status === "ACTIVE" ? "Unpublish" : "Publish"}
                   </button>
                 </div>
               </div>
@@ -248,17 +264,55 @@ export default function AdminHomePage() {
                   <div key={sku.id}>
                     <span>{sku.skuCode}</span>
                     <strong>{sku.name}</strong>
-                    <span>¥{sku.price}</span>
+                    <span>CNY {sku.price}</span>
                     <span>
-                      当前 {sku.stockQuantity} / 锁定 {sku.lockedStockQuantity} / 可售{" "}
-                      {sku.availableStock}
+                      Current {sku.stockQuantity} / Locked {sku.lockedStockQuantity} / Available {sku.availableStock}
                     </span>
                     <button type="button" onClick={() => void adjustInventory(sku.id, 1)}>
-                      入库 +1
+                      In +1
                     </button>
                     <button type="button" onClick={() => void adjustInventory(sku.id, -1)}>
-                      出库 -1
+                      Out -1
                     </button>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section className="table" id="orders" aria-label="Order management">
+          <div className="sectionHeader">
+            <div>
+              <p>Checkout orders</p>
+              <h2>Orders</h2>
+            </div>
+            <button type="button" onClick={() => void closeExpiredOrders()}>
+              Close expired
+            </button>
+          </div>
+
+          {orders.map((order) => (
+            <article key={order.id}>
+              <div className="productRow">
+                <div>
+                  <span>{order.status}</span>
+                  <h2>{order.orderNo}</h2>
+                  <small>Created {new Date(order.createdAt).toLocaleString()}</small>
+                </div>
+                <div className="actions">
+                  <strong>CNY {order.totalAmount}</strong>
+                  <small>Expires {new Date(order.expiresAt).toLocaleString()}</small>
+                </div>
+              </div>
+
+              <div className="orderTable">
+                {order.items.map((item) => (
+                  <div key={`${order.id}-${item.productName}-${item.skuName}`}>
+                    <strong>{item.productName}</strong>
+                    <span>{item.skuName}</span>
+                    <span>x {item.quantity}</span>
+                    <span>CNY {item.lineTotal}</span>
                   </div>
                 ))}
               </div>

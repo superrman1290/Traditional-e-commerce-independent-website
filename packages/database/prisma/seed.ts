@@ -1,4 +1,4 @@
-import { PrismaClient, ProductStatus, InventoryChangeType } from "@prisma/client";
+import { DiscountType, InventoryChangeType, PrismaClient, ProductStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -155,6 +155,46 @@ async function main() {
       });
     }
   }
+
+  await prisma.shippingTemplate.upsert({
+    where: { id: "00000000-0000-4000-8000-000000000301" },
+    update: {
+      name: "Default shipping",
+      province: null,
+      baseFee: "15.00",
+      freeShippingThreshold: "299.00",
+      isActive: true
+    },
+    create: {
+      id: "00000000-0000-4000-8000-000000000301",
+      name: "Default shipping",
+      province: null,
+      baseFee: "15.00",
+      freeShippingThreshold: "299.00",
+      isActive: true
+    }
+  });
+
+  await prisma.coupon.upsert({
+    where: { code: "STAGE3" },
+    update: {
+      name: "Stage 3 checkout coupon",
+      type: DiscountType.FIXED_AMOUNT,
+      amount: "20.00",
+      minSubtotal: "100.00",
+      usageLimit: 100,
+      isActive: true
+    },
+    create: {
+      code: "STAGE3",
+      name: "Stage 3 checkout coupon",
+      type: DiscountType.FIXED_AMOUNT,
+      amount: "20.00",
+      minSubtotal: "100.00",
+      usageLimit: 100,
+      isActive: true
+    }
+  });
 }
 
 main()
@@ -165,4 +205,3 @@ main()
     console.error(error);
     process.exitCode = 1;
   });
-

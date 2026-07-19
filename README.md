@@ -1,20 +1,20 @@
 # Traditional Ecommerce Independent Website
 
-单商户 B2C 实物商品电商独立站。当前仓库已完成 **阶段 2：用户、地址和购物车**。
+单商户 B2C 实物商品电商独立站。当前仓库已完成 **阶段 3：结算、运费和订单**。
 
 ## 当前功能
 
 - Monorepo: npm workspaces
-- 前台: Next.js + TypeScript，商品列表、商品详情、加购、购物车、账户和地址簿
-- 后台: Next.js + TypeScript，商品、SKU、库存管理基础界面
-- API: NestJS + TypeScript，健康检查、商品查询、后台商品管理、库存调整、认证、地址、游客会话和购物车
-- 数据库: PostgreSQL + Prisma migrations
-- 缓存/队列预留: Redis
-- 本地文件存储: MinIO
-- 测试: Vitest + Playwright
-- CI: GitHub Actions
+- 前台：Next.js + TypeScript，商品列表、商品详情、账户、地址、购物车和结算页
+- 后台：Next.js + TypeScript，商品、SKU、库存和订单查看
+- API：NestJS + TypeScript，健康检查、商品、库存、认证、地址、购物车、结算和订单
+- 数据库：PostgreSQL + Prisma migrations
+- 缓存/队列预留：Redis
+- 本地文件存储：MinIO
+- 测试：Vitest + Playwright
+- CI：GitHub Actions
 
-阶段 2 不包含结算、订单、支付、发货或售后功能。
+阶段 3 不包含支付、发货、物流、确认收货或售后功能。
 
 ## 目录结构
 
@@ -33,6 +33,7 @@ docs/
   STAGE_0.md
   STAGE_1.md
   STAGE_2.md
+  STAGE_3.md
 ```
 
 ## Windows 本地启动
@@ -78,12 +79,12 @@ npm run dev
 
 默认地址：
 
-- 前台: http://localhost:3000
-- 后台: http://localhost:3001
-- API 健康检查: http://localhost:4000/health
-- PostgreSQL: localhost:5433
-- Redis: localhost:6380
-- MinIO 控制台: http://localhost:9001
+- 前台：http://localhost:3000
+- 后台：http://localhost:3001
+- API 健康检查：http://localhost:4000/health
+- PostgreSQL：localhost:5433
+- Redis：localhost:6380
+- MinIO 控制台：http://localhost:9001
 
 如果本机 `3000` 已被其他项目占用，可在 `apps/storefront` 下临时运行：
 
@@ -112,6 +113,11 @@ node ..\..\node_modules\next\dist\bin\next dev -p 3002
 - `POST /addresses`
 - `PATCH /addresses/:id`
 - `DELETE /addresses/:id`
+- `GET /checkout/summary`
+- `POST /orders`
+- `GET /orders`
+- `GET /orders/:id`
+- `POST /orders/expire`
 
 后台接口：
 
@@ -120,19 +126,19 @@ node ..\..\node_modules\next\dist\bin\next dev -p 3002
 - `PATCH /admin/products/:id/status`
 - `POST /admin/inventory/adjustments`
 - `GET /admin/inventory/records`
+- `GET /admin/orders`
+- `POST /admin/orders/expire`
 
-购物车接口优先读取 `Authorization: Bearer <token>`。未登录时使用 `X-Guest-Session-Id`。
+购物车接口优先读取 `Authorization: Bearer <token>`。未登录时使用 `X-Guest-Session-Id`。结算和订单接口需要登录。
 
 ## 数据库
 
-阶段 2 新增业务表：
+阶段 3 新增业务表：
 
-- `users`
-- `user_sessions`
-- `guest_sessions`
-- `user_addresses`
-- `carts`
-- `cart_items`
+- `shipping_templates`
+- `coupons`
+- `orders`
+- `order_items`
 
 常用命令：
 
@@ -156,7 +162,6 @@ npm run build
 ## 已知问题
 
 - `npm run dev` 是长运行命令，需要使用 `Ctrl+C` 停止。
-- 当前后台接口尚未接入登录和权限控制，阶段 2 只为前台用户能力提供认证。
+- 当前后台接口尚未接入登录和权限控制。
 - 当前商品图片使用远程 Unsplash URL；生产环境应替换为 MinIO/S3 等对象存储中的商家图片。
-- 本机如已有服务占用 `3000`、`5432` 或 `6379`，请使用 `.env.example` 中的可配置端口。
-
+- 在 Windows 上如果一边运行 Next dev 服务一边执行 `next build`，`.next` 缓存可能出现开发产物错位；重启 dev 服务并清理对应应用的 `.next` 可恢复。
