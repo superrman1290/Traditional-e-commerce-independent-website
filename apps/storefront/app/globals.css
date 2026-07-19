@@ -60,8 +60,18 @@ a {
   padding: 22px;
   position: absolute;
   right: 0;
-  top: calc(100% + 12px);
+  top: 100%;
   z-index: 20;
+}
+
+.accountDropdown::before {
+  content: "";
+  display: block;
+  height: 8px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: -8px;
 }
 
 .accountMenu:hover .accountDropdown,

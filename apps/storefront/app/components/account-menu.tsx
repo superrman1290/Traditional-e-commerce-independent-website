@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 type User = {
   id: string;
@@ -21,13 +21,34 @@ export function AccountMenu() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     void loadUser();
     window.addEventListener(authChangedEvent, loadUser);
 
-    return () => window.removeEventListener(authChangedEvent, loadUser);
+    return () => {
+      window.removeEventListener(authChangedEvent, loadUser);
+      clearCloseTimer();
+    };
   }, []);
+
+  function clearCloseTimer() {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }
+
+  function openMenu() {
+    clearCloseTimer();
+    setIsMenuOpen(true);
+  }
+
+  function scheduleCloseMenu() {
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => setIsMenuOpen(false), 180);
+  }
 
   async function loadUser() {
     const token = localStorage.getItem("authToken");
@@ -51,6 +72,7 @@ export function AccountMenu() {
   function openModal(mode: AuthMode) {
     setAuthMode(mode);
     setMessage("");
+    clearCloseTimer();
     setIsMenuOpen(false);
     setIsModalOpen(true);
   }
@@ -58,6 +80,7 @@ export function AccountMenu() {
   function logout() {
     localStorage.removeItem("authToken");
     setUser(null);
+    clearCloseTimer();
     setIsMenuOpen(false);
     window.dispatchEvent(new Event(authChangedEvent));
   }
@@ -91,6 +114,7 @@ export function AccountMenu() {
     localStorage.setItem("authToken", result.token);
     localStorage.removeItem("guestSessionId");
     setUser(result.user);
+    clearCloseTimer();
     setIsMenuOpen(false);
     setIsModalOpen(false);
     window.dispatchEvent(new Event(authChangedEvent));
@@ -100,14 +124,18 @@ export function AccountMenu() {
   const identity = user ? "Registered customer" : "Guest visitor";
 
   return (
-    <div className={isModalOpen ? "accountMenu authOpen" : "accountMenu"} onMouseLeave={() => setIsMenuOpen(false)}>
+    <div
+      className={isModalOpen ? "accountMenu authOpen" : "accountMenu"}
+      onMouseEnter={openMenu}
+      onMouseLeave={scheduleCloseMenu}
+    >
       <button
         aria-expanded={isMenuOpen}
         aria-haspopup="true"
         className="accountTrigger"
         type="button"
         onClick={() => setIsMenuOpen((open) => !open)}
-        onMouseEnter={() => setIsMenuOpen(true)}
+        onMouseEnter={openMenu}
       >
         Account
       </button>
