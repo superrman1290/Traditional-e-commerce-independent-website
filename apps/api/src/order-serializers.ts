@@ -1,7 +1,8 @@
-import type { Order, OrderItem } from "@prisma/client";
+import type { Order, OrderItem, Payment, PaymentCallback, Refund } from "@prisma/client";
 
 export type OrderWithItems = Order & {
   items: OrderItem[];
+  payments?: Array<Payment & { callbacks?: PaymentCallback[]; refunds?: Refund[] }>;
 };
 
 function money(value: { toFixed: (digits: number) => string }) {
@@ -19,6 +20,9 @@ export function serializeOrder(order: OrderWithItems) {
     shippingFee: money(order.shippingFee),
     discountAmount: money(order.discountAmount),
     totalAmount: money(order.totalAmount),
+    paidAmount: order.paidAmount ? money(order.paidAmount) : null,
+    paidCurrency: order.paidCurrency,
+    paidAt: order.paidAt?.toISOString() ?? null,
     expiresAt: order.expiresAt.toISOString(),
     closedAt: order.closedAt?.toISOString() ?? null,
     createdAt: order.createdAt.toISOString(),
@@ -35,7 +39,34 @@ export function serializeOrder(order: OrderWithItems) {
       quantity: item.quantity,
       unitPrice: money(item.unitPrice),
       lineTotal: money(item.lineTotal)
-    }))
+    })),
+    payments:
+      order.payments?.map((payment) => ({
+        id: payment.id,
+        provider: payment.provider,
+        status: payment.status,
+        amount: money(payment.amount),
+        currency: payment.currency,
+        providerPaymentId: payment.providerPaymentId,
+        checkoutUrl: payment.checkoutUrl,
+        failureReason: payment.failureReason,
+        paidAt: payment.paidAt?.toISOString() ?? null,
+        createdAt: payment.createdAt.toISOString(),
+        callbacks: payment.callbacks?.map((callback) => ({
+          id: callback.id,
+          providerEventId: callback.providerEventId,
+          isVerified: callback.isVerified,
+          processingResult: callback.processingResult,
+          processedAt: callback.processedAt?.toISOString() ?? null
+        })) ?? [],
+        refunds: payment.refunds?.map((refund) => ({
+          id: refund.id,
+          amount: money(refund.amount),
+          currency: refund.currency,
+          status: refund.status,
+          reason: refund.reason,
+          providerRefundId: refund.providerRefundId
+        })) ?? []
+      })) ?? []
   };
 }
-

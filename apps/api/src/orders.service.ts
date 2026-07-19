@@ -6,6 +6,17 @@ import { PrismaService } from "./prisma.service";
 const orderInclude = {
   items: {
     orderBy: { createdAt: "asc" }
+  },
+  payments: {
+    include: {
+      callbacks: {
+        orderBy: { createdAt: "desc" }
+      },
+      refunds: {
+        orderBy: { createdAt: "desc" }
+      }
+    },
+    orderBy: { createdAt: "desc" }
   }
 } satisfies Prisma.OrderInclude;
 

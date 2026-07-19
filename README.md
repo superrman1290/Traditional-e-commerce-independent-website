@@ -1,20 +1,20 @@
 # Traditional Ecommerce Independent Website
 
-单商户 B2C 实物商品电商独立站。当前仓库已完成 **阶段 3：结算、运费和订单**。
+单商户 B2C 实物商品电商独立站。当前仓库已完成 **阶段 4：支付系统**。
 
 ## 当前功能
 
 - Monorepo: npm workspaces
-- 前台：Next.js + TypeScript，商品列表、商品详情、账户、地址、购物车和结算页
-- 后台：Next.js + TypeScript，商品、SKU、库存和订单查看
-- API：NestJS + TypeScript，健康检查、商品、库存、认证、地址、购物车、结算和订单
+- 前台：Next.js + TypeScript，商品列表、商品详情、账户、地址、购物车、结算页和支付页
+- 后台：Next.js + TypeScript，商品、SKU、库存、订单和支付记录查看
+- API：NestJS + TypeScript，健康检查、商品、库存、认证、地址、购物车、结算、订单和支付
 - 数据库：PostgreSQL + Prisma migrations
 - 缓存/队列预留：Redis
 - 本地文件存储：MinIO
 - 测试：Vitest + Playwright
 - CI：GitHub Actions
 
-阶段 3 不包含支付、发货、物流、确认收货或售后功能。
+阶段 4 不包含发货、物流、确认收货或售后流程。Stripe 通道提供正式支付适配器骨架，本地完整验收使用 `TEST` 支付通道。
 
 ## 目录结构
 
@@ -34,6 +34,7 @@ docs/
   STAGE_1.md
   STAGE_2.md
   STAGE_3.md
+  STAGE_4.md
 ```
 
 ## Windows 本地启动
@@ -117,7 +118,13 @@ node ..\..\node_modules\next\dist\bin\next dev -p 3002
 - `POST /orders`
 - `GET /orders`
 - `GET /orders/:id`
+- `GET /orders/:id/payments`
 - `POST /orders/expire`
+- `POST /payments`
+- `GET /payments/:id`
+- `POST /payments/test/simulate`
+- `POST /payments/test/callback`
+- `POST /payments/stripe/callback`
 
 后台接口：
 
@@ -128,17 +135,20 @@ node ..\..\node_modules\next\dist\bin\next dev -p 3002
 - `GET /admin/inventory/records`
 - `GET /admin/orders`
 - `POST /admin/orders/expire`
+- `GET /admin/payments`
+- `POST /admin/payments/:id/refunds`
 
-购物车接口优先读取 `Authorization: Bearer <token>`。未登录时使用 `X-Guest-Session-Id`。结算和订单接口需要登录。
+购物车接口优先读取 `Authorization: Bearer <token>`。未登录时使用 `X-Guest-Session-Id`。结算、订单和发起支付接口需要登录。支付回调接口通过签名验签保护。
 
 ## 数据库
 
-阶段 3 新增业务表：
+阶段 4 新增业务表：
 
-- `shipping_templates`
-- `coupons`
-- `orders`
-- `order_items`
+- `payments`
+- `payment_callbacks`
+- `refunds`
+
+阶段 4 还为 `orders` 增加 `paid_amount`、`paid_currency`、`paid_at` 字段，并为订单状态增加 `PAID`。
 
 常用命令：
 
@@ -163,5 +173,6 @@ npm run build
 
 - `npm run dev` 是长运行命令，需要使用 `Ctrl+C` 停止。
 - 当前后台接口尚未接入登录和权限控制。
+- 当前 Stripe 通道是正式支付适配器骨架，需要配置真实密钥并替换为平台 SDK 调用后才能用于生产收款。
 - 当前商品图片使用远程 Unsplash URL；生产环境应替换为 MinIO/S3 等对象存储中的商家图片。
 - 在 Windows 上如果一边运行 Next dev 服务一边执行 `next build`，`.next` 缓存可能出现开发产物错位；重启 dev 服务并清理对应应用的 `.next` 可恢复。

@@ -649,6 +649,60 @@ mark {
   padding-top: 12px;
 }
 
+.paymentLayout {
+  align-items: start;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  margin-top: 28px;
+}
+
+.paymentAmount {
+  font-size: 32px;
+}
+
+.paymentProviderTabs {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.paymentHistory {
+  display: grid;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.sectionTitle p,
+.sectionTitle h2 {
+  margin: 0;
+}
+
+.sectionTitle p,
+.paymentHistory span,
+.paymentHistory small {
+  color: #53645a;
+}
+
+.sectionTitle h2 {
+  margin-top: 6px;
+}
+
+.paymentHistory article {
+  background: #ffffff;
+  border: 1px solid #dfe6dc;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
+  padding: 16px;
+}
+
+.paymentHistory article > div {
+  display: grid;
+  gap: 4px;
+}
+
 @media (max-width: 640px) {
   .shell {
     padding: 18px;
@@ -679,12 +733,14 @@ mark {
   .catalogHeader,
   .detailLayout,
   .accountLayout,
-  .checkoutLayout {
+  .checkoutLayout,
+  .paymentLayout {
     grid-template-columns: 1fr;
   }
 
   .couponRow,
-  .summaryItems article {
+  .summaryItems article,
+  .paymentHistory article {
     grid-template-columns: 1fr;
   }
 

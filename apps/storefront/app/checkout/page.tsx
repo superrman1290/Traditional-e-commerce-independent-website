@@ -188,6 +188,9 @@ export default function CheckoutPage() {
           <p>Status: {order.status}</p>
           <strong>CNY {order.totalAmount}</strong>
           <small>Stock is locked until {new Date(order.expiresAt).toLocaleString()}.</small>
+          <a className="detailLink" href={`/pay/${order.id}`}>
+            Pay now
+          </a>
         </section>
       ) : (
         <section className="checkoutLayout">
@@ -283,4 +286,3 @@ export default function CheckoutPage() {
     </main>
   );
 }
-

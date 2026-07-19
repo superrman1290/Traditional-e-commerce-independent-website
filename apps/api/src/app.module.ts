@@ -8,6 +8,8 @@ import { CartService } from "./cart.service";
 import { HealthController } from "./health.controller";
 import { OrdersController } from "./orders.controller";
 import { OrdersService } from "./orders.service";
+import { PaymentsController } from "./payments.controller";
+import { PaymentsService } from "./payments.service";
 import { PrismaService } from "./prisma.service";
 import { ProductsController } from "./products.controller";
 import { ProductsService } from "./products.service";
@@ -19,8 +21,9 @@ import { ProductsService } from "./products.service";
     AuthController,
     CartController,
     AddressesController,
-    OrdersController
+    OrdersController,
+    PaymentsController
   ],
-  providers: [PrismaService, ProductsService, AuthService, CartService, AddressesService, OrdersService]
+  providers: [PrismaService, ProductsService, AuthService, CartService, AddressesService, OrdersService, PaymentsService]
 })
 export class AppModule {}

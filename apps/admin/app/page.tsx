@@ -26,11 +26,14 @@ type Product = {
 type Order = {
   id: string;
   orderNo: string;
-  status: "PENDING_PAYMENT" | "CLOSED";
+  status: "PENDING_PAYMENT" | "PAID" | "CLOSED";
   subtotalAmount: string;
   shippingFee: string;
   discountAmount: string;
   totalAmount: string;
+  paidAmount: string | null;
+  paidCurrency: string | null;
+  paidAt: string | null;
   expiresAt: string;
   createdAt: string;
   items: Array<{
@@ -38,6 +41,25 @@ type Order = {
     skuName: string;
     quantity: number;
     lineTotal: string;
+  }>;
+  payments: Array<{
+    id: string;
+    provider: "TEST" | "STRIPE";
+    status: "PENDING" | "SUCCEEDED" | "FAILED" | "CLOSED";
+    amount: string;
+    currency: string;
+    failureReason: string | null;
+    callbacks: Array<{
+      isVerified: boolean;
+      processingResult: string | null;
+    }>;
+    refunds: Array<{
+      id: string;
+      amount: string;
+      currency: string;
+      status: string;
+      providerRefundId: string | null;
+    }>;
   }>;
 };
 
@@ -91,8 +113,9 @@ export default function AdminHomePage() {
       0
     );
     const pendingOrders = orders.filter((order) => order.status === "PENDING_PAYMENT").length;
+    const paidOrders = orders.filter((order) => order.status === "PAID").length;
 
-    return { skuCount, availableStock, lockedStock, pendingOrders };
+    return { skuCount, availableStock, lockedStock, pendingOrders, paidOrders };
   }, [orders, products]);
 
   async function createProduct(event: FormEvent<HTMLFormElement>) {
@@ -170,6 +193,16 @@ export default function AdminHomePage() {
     await refreshAll();
   }
 
+  async function createRefund(paymentId: string, amount: string) {
+    const response = await fetch(`${apiUrl}/admin/payments/${paymentId}/refunds`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount, reason: "Admin payment refund record" })
+    });
+    setMessage(response.ok ? "Refund record created." : "Refund could not be created.");
+    await refreshAll();
+  }
+
   return (
     <main className="shell">
       <aside className="sidebar">
@@ -207,6 +240,10 @@ export default function AdminHomePage() {
           <article>
             <span>Pending orders</span>
             <strong>{totals.pendingOrders}</strong>
+          </article>
+          <article>
+            <span>Paid orders</span>
+            <strong>{totals.paidOrders}</strong>
           </article>
         </div>
 
@@ -302,7 +339,9 @@ export default function AdminHomePage() {
                 </div>
                 <div className="actions">
                   <strong>CNY {order.totalAmount}</strong>
-                  <small>Expires {new Date(order.expiresAt).toLocaleString()}</small>
+                  <small>
+                    {order.paidAt ? `Paid ${new Date(order.paidAt).toLocaleString()}` : `Expires ${new Date(order.expiresAt).toLocaleString()}`}
+                  </small>
                 </div>
               </div>
 
@@ -313,6 +352,29 @@ export default function AdminHomePage() {
                     <span>{item.skuName}</span>
                     <span>x {item.quantity}</span>
                     <span>CNY {item.lineTotal}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="paymentTable">
+                {order.payments.map((payment) => (
+                  <div key={payment.id}>
+                    <strong>{payment.provider}</strong>
+                    <span>{payment.status}</span>
+                    <span>
+                      {payment.currency} {payment.amount}
+                    </span>
+                    <span>
+                      {payment.callbacks[0]?.processingResult ?? payment.failureReason ?? "No callback"}
+                    </span>
+                    <span>{payment.refunds[0] ? `Refund ${payment.refunds[0].status}` : "No refund"}</span>
+                    <button
+                      disabled={payment.status !== "SUCCEEDED"}
+                      type="button"
+                      onClick={() => void createRefund(payment.id, payment.amount)}
+                    >
+                      Refund
+                    </button>
                   </div>
                 ))}
               </div>
