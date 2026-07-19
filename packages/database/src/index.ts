@@ -8,3 +8,9 @@ export type SystemSetting = {
   updatedAt: Date;
 };
 
+export type InventorySnapshot = {
+  skuId: string;
+  stockQuantity: number;
+  lockedStockQuantity: number;
+  availableStock: number;
+};

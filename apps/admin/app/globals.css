@@ -42,18 +42,25 @@ a {
   padding: 32px;
 }
 
-.workspace header p,
-.workspace header h1 {
+.pageHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.pageHeader p,
+.pageHeader h1 {
   margin: 0;
 }
 
-.workspace header p {
+.pageHeader p {
   color: #637282;
   font-size: 14px;
   margin-bottom: 8px;
 }
 
-.workspace header h1 {
+.pageHeader h1 {
   font-size: 32px;
   line-height: 1.2;
 }
@@ -61,7 +68,7 @@ a {
 .metrics {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 32px;
 }
 
@@ -85,6 +92,104 @@ a {
   font-size: 28px;
 }
 
+button,
+input {
+  border: 1px solid #cbd5df;
+  border-radius: 6px;
+  font: inherit;
+  min-height: 40px;
+}
+
+button {
+  background: #1b1f24;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 0 14px;
+}
+
+button:disabled {
+  background: #8d99a6;
+  cursor: not-allowed;
+}
+
+input {
+  background: #ffffff;
+  min-width: 0;
+  padding: 0 12px;
+}
+
+.editor {
+  background: #ffffff;
+  border: 1px solid #dee3e8;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 24px;
+  padding: 18px;
+}
+
+.editor p {
+  color: #526170;
+  margin: 0;
+}
+
+.table {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.table article {
+  background: #ffffff;
+  border: 1px solid #dee3e8;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.productRow {
+  align-items: center;
+  border-bottom: 1px solid #eef1f4;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  padding: 18px;
+}
+
+.productRow h2,
+.productRow small {
+  margin: 0;
+}
+
+.productRow span,
+.productRow small,
+.skuTable span {
+  color: #637282;
+}
+
+.actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.skuTable {
+  display: grid;
+}
+
+.skuTable div {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 140px 1fr 90px minmax(240px, 1.2fr) 88px 88px;
+  min-height: 56px;
+  padding: 12px 18px;
+}
+
+.skuTable div + div {
+  border-top: 1px solid #eef1f4;
+}
+
 @media (max-width: 760px) {
   .shell {
     grid-template-columns: 1fr;
@@ -104,5 +209,15 @@ a {
   .metrics {
     grid-template-columns: 1fr;
   }
-}
 
+  .pageHeader,
+  .productRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .editor,
+  .skuTable div {
+    grid-template-columns: 1fr;
+  }
+}
