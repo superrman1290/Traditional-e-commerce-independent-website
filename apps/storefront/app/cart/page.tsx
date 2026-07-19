@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { SiteNav } from "../components/site-nav";
 
 type Cart = {
   id: string;
@@ -99,13 +100,7 @@ export default function CartPage() {
 
   return (
     <main className="shell">
-      <nav className="nav" aria-label="Main navigation">
-        <strong>Traditional Commerce</strong>
-        <div>
-          <a href="/">Products</a>
-          <a href="/account">Account</a>
-        </div>
-      </nav>
+      <SiteNav />
 
       <section className="catalogHeader">
         <div>
@@ -174,4 +169,3 @@ export default function CartPage() {
     </main>
   );
 }
-

@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { authChangedEvent } from "../components/account-menu";
+import { SiteNav } from "../components/site-nav";
 
 type User = {
   id: string;
@@ -24,13 +26,15 @@ type Address = {
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export default function AccountPage() {
-  const [mode, setMode] = useState<"login" | "register">("login");
   const [user, setUser] = useState<User | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     void loadSession();
+    window.addEventListener(authChangedEvent, loadSession);
+
+    return () => window.removeEventListener(authChangedEvent, loadSession);
   }, []);
 
   async function loadSession() {
@@ -48,6 +52,8 @@ export default function AccountPage() {
       await loadAddresses(token);
     } else {
       localStorage.removeItem("authToken");
+      setUser(null);
+      setAddresses([]);
     }
   }
 
@@ -63,38 +69,6 @@ export default function AccountPage() {
     if (response.ok) {
       setAddresses((await response.json()) as Address[]);
     }
-  }
-
-  async function submitAuth(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage("");
-
-    const form = new FormData(event.currentTarget);
-    const endpoint = mode === "login" ? "login" : "register";
-    const body = {
-      email: String(form.get("email") ?? ""),
-      password: String(form.get("password") ?? ""),
-      name: String(form.get("name") ?? ""),
-      guestSessionId: localStorage.getItem("guestSessionId") ?? undefined
-    };
-
-    const response = await fetch(`${apiUrl}/auth/${endpoint}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      setMessage("Could not authenticate with those details.");
-      return;
-    }
-
-    const result = (await response.json()) as { token: string; user: User };
-    localStorage.setItem("authToken", result.token);
-    localStorage.removeItem("guestSessionId");
-    setUser(result.user);
-    setMessage("Signed in. Guest cart has been merged.");
-    await loadAddresses(result.token);
   }
 
   async function submitAddress(event: FormEvent<HTMLFormElement>) {
@@ -136,22 +110,17 @@ export default function AccountPage() {
     setUser(null);
     setAddresses([]);
     setMessage("Signed out.");
+    window.dispatchEvent(new Event(authChangedEvent));
   }
 
   return (
     <main className="shell">
-      <nav className="nav" aria-label="Main navigation">
-        <strong>Traditional Commerce</strong>
-        <div>
-          <a href="/">Products</a>
-          <a href="/cart">Cart</a>
-        </div>
-      </nav>
+      <SiteNav />
 
       <section className="accountLayout">
         <div className="detailPanel">
           <span>Stage 2</span>
-          <h1>{user ? "Account" : "Sign in"}</h1>
+          <h1>{user ? "Account" : "Guest account"}</h1>
           {user ? (
             <>
               <p>{user.name}</p>
@@ -161,26 +130,7 @@ export default function AccountPage() {
               </button>
             </>
           ) : (
-            <>
-              <div className="categoryTabs compactTabs">
-                <button className={mode === "login" ? "active" : ""} type="button" onClick={() => setMode("login")}>
-                  Login
-                </button>
-                <button
-                  className={mode === "register" ? "active" : ""}
-                  type="button"
-                  onClick={() => setMode("register")}
-                >
-                  Register
-                </button>
-              </div>
-              <form className="formStack" onSubmit={(event) => void submitAuth(event)}>
-                {mode === "register" ? <input name="name" placeholder="Name" required /> : null}
-                <input name="email" placeholder="Email" required type="email" />
-                <input minLength={8} name="password" placeholder="Password" required type="password" />
-                <button type="submit">{mode === "login" ? "Login" : "Register"}</button>
-              </form>
-            </>
+            <p>Hover Account in the top navigation to login or register.</p>
           )}
           {message ? <p className="formMessage">{message}</p> : null}
         </div>
@@ -231,4 +181,3 @@ export default function AccountPage() {
     </main>
   );
 }
-

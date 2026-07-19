@@ -31,10 +31,148 @@ a {
   justify-content: space-between;
 }
 
-.nav div {
+.navLinks {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
+}
+
+.accountMenu {
+  position: relative;
+}
+
+.accountTrigger {
+  border: 0;
+  background: transparent;
+  min-height: auto;
+  padding: 0;
+}
+
+.accountDropdown {
+  background: #ffffff;
+  border: 1px solid #dfe6dc;
+  border-radius: 8px;
+  box-shadow: 0 18px 45px rgb(23 33 27 / 14%);
+  display: none;
+  gap: 18px;
+  min-width: 320px;
+  padding: 22px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 12px);
+  z-index: 20;
+}
+
+.accountMenu:hover .accountDropdown,
+.accountMenu:focus-within .accountDropdown,
+.accountDropdown.open {
+  display: grid;
+}
+
+.accountMenu.authOpen .accountDropdown {
+  display: none;
+}
+
+.accountProfile {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 58px minmax(0, 1fr);
+}
+
+.accountProfile > div:last-child {
+  display: grid;
+  gap: 4px;
+}
+
+.accountProfile span,
+.accountProfile small {
+  color: #53645a;
+}
+
+.avatar {
+  align-items: center;
+  background: #e8f1ff;
+  border: 1px solid #b7cff5;
+  border-radius: 999px;
+  color: #225ba5;
+  display: flex;
+  font-weight: 800;
+  height: 58px;
+  justify-content: center;
+  width: 58px;
+}
+
+.accountLinks {
+  border-top: 1px solid #dfe6dc;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  padding-top: 18px;
+}
+
+.accountLinks a,
+.accountLinks button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #1261ff;
+  display: flex;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.accountLinks a + button,
+.accountLinks button + button {
+  border-left: 1px solid #c9d4cb;
+}
+
+.modalBackdrop {
+  align-items: center;
+  background: rgb(23 33 27 / 35%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 20px;
+  position: fixed;
+  z-index: 50;
+}
+
+.authModal {
+  background: #ffffff;
+  border: 1px solid #dfe6dc;
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgb(23 33 27 / 22%);
+  display: grid;
+  gap: 16px;
+  max-width: 420px;
+  padding: 28px;
+  position: relative;
+  width: min(100%, 420px);
+}
+
+.authModal h2 {
+  margin: 0;
+}
+
+.authModal > span {
+  color: #53645a;
+}
+
+.modalClose {
+  align-items: center;
+  border-radius: 999px;
+  display: flex;
+  height: 34px;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0;
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: 34px;
 }
 
 .catalogHeader {
@@ -373,6 +511,23 @@ mark {
   .nav {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .navLinks {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .accountMenu,
+  .accountTrigger {
+    width: 100%;
+  }
+
+  .accountDropdown {
+    left: 0;
+    min-width: 0;
+    right: auto;
+    width: min(100vw - 36px, 340px);
   }
 
   .catalogHeader,

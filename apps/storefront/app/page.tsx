@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { SiteNav } from "./components/site-nav";
 
 type Product = {
   id: string;
@@ -65,15 +66,7 @@ export default function StorefrontHomePage() {
 
   return (
     <main className="shell">
-      <nav className="nav" aria-label="Main navigation">
-        <strong>Traditional Commerce</strong>
-        <div>
-          <a href="/">Products</a>
-          <a href="/cart">Cart</a>
-          <a href="/account">Account</a>
-          <a href="http://localhost:3001">Admin</a>
-        </div>
-      </nav>
+      <SiteNav />
 
       <section className="catalogHeader">
         <div>
@@ -145,4 +138,3 @@ export default function StorefrontHomePage() {
     </main>
   );
 }
-
