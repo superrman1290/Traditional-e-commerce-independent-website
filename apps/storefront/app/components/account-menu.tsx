@@ -47,7 +47,7 @@ export function AccountMenu() {
 
   function scheduleCloseMenu() {
     clearCloseTimer();
-    closeTimerRef.current = setTimeout(() => setIsMenuOpen(false), 180);
+    closeTimerRef.current = setTimeout(() => setIsMenuOpen(false), 100);
   }
 
   async function loadUser() {
