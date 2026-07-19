@@ -172,13 +172,6 @@ a {
   margin: 0;
 }
 
-.authIntro {
-  color: #303a34;
-  font-size: 14px;
-  line-height: 1.7;
-  margin: -8px 0 2px;
-}
-
 .authModal .formStack {
   gap: 16px;
 }

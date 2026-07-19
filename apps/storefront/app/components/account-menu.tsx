@@ -181,11 +181,6 @@ export function AccountMenu() {
             onMouseDown={(event) => event.stopPropagation()}
           >
             <h2>{authMode === "login" ? "登录" : "注册"}</h2>
-            <p className="authIntro">
-              {authMode === "login"
-                ? "使用邮箱和密码登录，继续创建 AI 图片。"
-                : "创建账号后会获得初始积分，用于体验图片生成。"}
-            </p>
             <form className="formStack" onSubmit={(event) => void submitAuth(event)}>
               <label className="authField">
                 邮箱
