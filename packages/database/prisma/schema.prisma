@@ -45,6 +45,8 @@ enum DiscountType {
 enum OrderStatus {
   PENDING_PAYMENT
   PAID
+  SHIPPED
+  COMPLETED
   CLOSED
 }
 
@@ -310,6 +312,8 @@ model Order {
   paidAmount     Decimal?    @map("paid_amount") @db.Decimal(12, 2)
   paidCurrency   String?     @map("paid_currency") @db.VarChar(12)
   paidAt         DateTime?   @map("paid_at")
+  shippedAt      DateTime?   @map("shipped_at")
+  completedAt    DateTime?   @map("completed_at")
   expiresAt      DateTime    @map("expires_at")
   closedAt       DateTime?   @map("closed_at")
   createdAt      DateTime    @default(now()) @map("created_at")
@@ -319,11 +323,31 @@ model Order {
   coupon         Coupon?     @relation(fields: [couponId], references: [id], onDelete: SetNull)
   items          OrderItem[]
   payments       Payment[]
+  shipment       Shipment?
 
   @@unique([userId, idempotencyKey])
   @@index([userId, status])
   @@index([status, expiresAt])
   @@map("orders")
+}
+
+model Shipment {
+  id             String   @id @default(uuid()) @db.Uuid
+  orderId        String   @unique @map("order_id") @db.Uuid
+  carrierName    String   @map("carrier_name") @db.VarChar(120)
+  carrierCode    String?  @map("carrier_code") @db.VarChar(80)
+  trackingNumber String   @map("tracking_number") @db.VarChar(120)
+  trackingUrl    String?  @map("tracking_url")
+  shippedAt      DateTime @map("shipped_at")
+  autoConfirmAt  DateTime @map("auto_confirm_at")
+  confirmedAt    DateTime? @map("confirmed_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([trackingNumber])
+  @@index([autoConfirmAt])
+  @@map("shipments")
 }
 
 model Payment {

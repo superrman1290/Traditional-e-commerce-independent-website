@@ -7,6 +7,7 @@ const orderInclude = {
   items: {
     orderBy: { createdAt: "asc" }
   },
+  shipment: true,
   payments: {
     include: {
       callbacks: {
@@ -50,12 +51,20 @@ export type CreateOrderInput = {
   idempotencyKey: string;
 };
 
+export type CreateShipmentInput = {
+  carrierName: string;
+  carrierCode?: string;
+  trackingNumber: string;
+  trackingUrl?: string;
+};
+
 @Injectable()
 export class OrdersService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async getCheckoutSummary(userId: string, input: CheckoutSummaryInput) {
     await this.closeExpiredOrders();
+    await this.autoCompleteShippedOrders();
 
     const cart = await this.getActiveCart(userId);
     const address = input.addressId
@@ -76,6 +85,7 @@ export class OrdersService {
 
   async createOrder(userId: string, input: CreateOrderInput) {
     await this.closeExpiredOrders();
+    await this.autoCompleteShippedOrders();
 
     if (!input.addressId?.trim()) {
       throw new BadRequestException("addressId is required");
@@ -239,6 +249,7 @@ export class OrdersService {
 
   async listUserOrders(userId: string) {
     await this.closeExpiredOrders();
+    await this.autoCompleteShippedOrders();
 
     const orders = await this.prisma.order.findMany({
       where: { userId },
@@ -251,6 +262,7 @@ export class OrdersService {
 
   async getUserOrder(userId: string, orderId: string) {
     await this.closeExpiredOrders();
+    await this.autoCompleteShippedOrders();
 
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, userId },
@@ -266,6 +278,7 @@ export class OrdersService {
 
   async listAdminOrders() {
     await this.closeExpiredOrders();
+    await this.autoCompleteShippedOrders();
 
     const orders = await this.prisma.order.findMany({
       include: orderInclude,
@@ -329,6 +342,167 @@ export class OrdersService {
     }
 
     return { closedCount };
+  }
+
+  async createShipment(orderId: string, input: CreateShipmentInput) {
+    await this.closeExpiredOrders();
+    await this.autoCompleteShippedOrders();
+
+    const carrierName = input.carrierName?.trim();
+    const carrierCode = input.carrierCode?.trim() || null;
+    const trackingNumber = input.trackingNumber?.trim();
+    const trackingUrl = input.trackingUrl?.trim() || null;
+
+    if (!carrierName) {
+      throw new BadRequestException("carrierName is required");
+    }
+
+    if (!trackingNumber) {
+      throw new BadRequestException("trackingNumber is required");
+    }
+
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId },
+      include: orderInclude
+    });
+
+    if (!order) {
+      throw new NotFoundException("order not found");
+    }
+
+    if (order.status === OrderStatus.COMPLETED && order.shipment?.confirmedAt) {
+      return serializeOrder(order);
+    }
+
+    if (order.status !== OrderStatus.PAID || order.shipment) {
+      throw new BadRequestException("order is not ready for shipping");
+    }
+
+    const shippedAt = new Date();
+    const autoConfirmAt = new Date(shippedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const shippedOrder = await this.prisma.$transaction(async (tx) => {
+      await tx.shipment.create({
+        data: {
+          orderId: order.id,
+          carrierName,
+          carrierCode,
+          trackingNumber,
+          trackingUrl,
+          shippedAt,
+          autoConfirmAt
+        }
+      });
+
+      return tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: OrderStatus.SHIPPED,
+          shippedAt,
+          completedAt: null
+        },
+        include: orderInclude
+      });
+    });
+
+    return serializeOrder(shippedOrder);
+  }
+
+  async confirmReceipt(userId: string, orderId: string) {
+    await this.closeExpiredOrders();
+    await this.autoCompleteShippedOrders();
+
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, userId },
+      include: orderInclude
+    });
+
+    if (!order) {
+      throw new NotFoundException("order not found");
+    }
+
+    if (order.status === OrderStatus.COMPLETED && order.shipment?.confirmedAt) {
+      return serializeOrder(order);
+    }
+
+    if (order.status !== OrderStatus.SHIPPED || !order.shipment) {
+      throw new BadRequestException("order is not ready for confirmation");
+    }
+
+    const confirmedAt = new Date();
+    const completedOrder = await this.prisma.$transaction(async (tx) => {
+      await tx.shipment.update({
+        where: { orderId: order.id },
+        data: { confirmedAt }
+      });
+
+      return tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: OrderStatus.COMPLETED,
+          completedAt: confirmedAt
+        },
+        include: orderInclude
+      });
+    });
+
+    return serializeOrder(completedOrder);
+  }
+
+  async autoCompleteShippedOrders() {
+    const shipments = await this.prisma.shipment.findMany({
+      where: {
+        autoConfirmAt: { lte: new Date() },
+        confirmedAt: null,
+        order: {
+          status: OrderStatus.SHIPPED
+        }
+      },
+      include: {
+        order: {
+          include: orderInclude
+        }
+      },
+      take: 100
+    });
+
+    let completedCount = 0;
+
+    for (const shipment of shipments) {
+      const confirmedAt = new Date();
+      const completed = await this.prisma.$transaction(async (tx) => {
+        const shipmentUpdate = await tx.shipment.updateMany({
+          where: {
+            id: shipment.id,
+            confirmedAt: null
+          },
+          data: { confirmedAt }
+        });
+
+        if (shipmentUpdate.count !== 1) {
+          return false;
+        }
+
+        const orderUpdate = await tx.order.updateMany({
+          where: {
+            id: shipment.orderId,
+            status: OrderStatus.SHIPPED
+          },
+          data: {
+            status: OrderStatus.COMPLETED,
+            completedAt: confirmedAt
+          }
+        });
+
+        return orderUpdate.count === 1;
+      });
+
+      if (completed) {
+        completedCount += 1;
+      }
+    }
+
+    return { completedCount };
   }
 
   private async getActiveCart(userId: string) {

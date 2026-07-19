@@ -23,10 +23,17 @@ type Product = {
   }>;
 };
 
+type ShipmentForm = {
+  carrierName: string;
+  carrierCode: string;
+  trackingNumber: string;
+  trackingUrl: string;
+};
+
 type Order = {
   id: string;
   orderNo: string;
-  status: "PENDING_PAYMENT" | "PAID" | "CLOSED";
+  status: "PENDING_PAYMENT" | "PAID" | "SHIPPED" | "COMPLETED" | "CLOSED";
   subtotalAmount: string;
   shippingFee: string;
   discountAmount: string;
@@ -34,8 +41,19 @@ type Order = {
   paidAmount: string | null;
   paidCurrency: string | null;
   paidAt: string | null;
+  shippedAt: string | null;
+  completedAt: string | null;
   expiresAt: string;
   createdAt: string;
+  shipment: {
+    carrierName: string;
+    carrierCode: string | null;
+    trackingNumber: string;
+    trackingUrl: string | null;
+    shippedAt: string;
+    autoConfirmAt: string;
+    confirmedAt: string | null;
+  } | null;
   items: Array<{
     productName: string;
     skuName: string;
@@ -71,6 +89,7 @@ export default function AdminHomePage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shipmentForms, setShipmentForms] = useState<Record<string, ShipmentForm>>({});
   const [form, setForm] = useState({
     name: "Handmade incense burner",
     slug: "handmade-incense-burner",
@@ -81,6 +100,20 @@ export default function AdminHomePage() {
     price: "189.00",
     stockQuantity: "12"
   });
+
+  function setShipmentField(orderId: string, field: keyof ShipmentForm, value: string) {
+    setShipmentForms((current) => ({
+      ...current,
+      [orderId]: {
+        carrierName: "",
+        carrierCode: "",
+        trackingNumber: "",
+        trackingUrl: "",
+        ...current[orderId],
+        [field]: value
+      }
+    }));
+  }
 
   async function loadProducts() {
     const response = await fetch(`${apiUrl}/admin/products`);
@@ -114,8 +147,10 @@ export default function AdminHomePage() {
     );
     const pendingOrders = orders.filter((order) => order.status === "PENDING_PAYMENT").length;
     const paidOrders = orders.filter((order) => order.status === "PAID").length;
+    const shippedOrders = orders.filter((order) => order.status === "SHIPPED").length;
+    const completedOrders = orders.filter((order) => order.status === "COMPLETED").length;
 
-    return { skuCount, availableStock, lockedStock, pendingOrders, paidOrders };
+    return { skuCount, availableStock, lockedStock, pendingOrders, paidOrders, shippedOrders, completedOrders };
   }, [orders, products]);
 
   async function createProduct(event: FormEvent<HTMLFormElement>) {
@@ -203,6 +238,24 @@ export default function AdminHomePage() {
     await refreshAll();
   }
 
+  async function createShipment(orderId: string) {
+    const payload = shipmentForms[orderId] ?? {
+      carrierName: "",
+      carrierCode: "",
+      trackingNumber: "",
+      trackingUrl: ""
+    };
+
+    const response = await fetch(`${apiUrl}/admin/orders/${orderId}/shipment`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    setMessage(response.ok ? "Shipment created." : "Shipment could not be created.");
+    await refreshAll();
+  }
+
   return (
     <main className="shell">
       <aside className="sidebar">
@@ -216,8 +269,8 @@ export default function AdminHomePage() {
       <section className="workspace">
         <header className="pageHeader">
           <div>
-            <p>Stage 3</p>
-            <h1>Catalog, Inventory And Orders</h1>
+            <p>Stage 5</p>
+            <h1>Catalog, Inventory And Shipping</h1>
           </div>
           <button type="button" onClick={() => void refreshAll()}>
             Refresh
@@ -244,6 +297,14 @@ export default function AdminHomePage() {
           <article>
             <span>Paid orders</span>
             <strong>{totals.paidOrders}</strong>
+          </article>
+          <article>
+            <span>Shipped orders</span>
+            <strong>{totals.shippedOrders}</strong>
+          </article>
+          <article>
+            <span>Completed orders</span>
+            <strong>{totals.completedOrders}</strong>
           </article>
         </div>
 
@@ -355,6 +416,67 @@ export default function AdminHomePage() {
                   </div>
                 ))}
               </div>
+
+              {order.shipment ? (
+                <div className="shipmentTable">
+                  <div>
+                    <strong>{order.shipment.carrierName}</strong>
+                    <span>{order.shipment.carrierCode ?? "No carrier code"}</span>
+                  </div>
+                  <div>
+                    <strong>{order.shipment.trackingNumber}</strong>
+                    <span>{order.shipment.trackingUrl ?? "No tracking URL"}</span>
+                  </div>
+                  <div>
+                    <strong>Shipped</strong>
+                    <span>{new Date(order.shipment.shippedAt).toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <strong>Auto confirm</strong>
+                    <span>{new Date(order.shipment.autoConfirmAt).toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <strong>Confirmed</strong>
+                    <span>{order.shipment.confirmedAt ? new Date(order.shipment.confirmedAt).toLocaleString() : "-"}</span>
+                  </div>
+                </div>
+              ) : null}
+
+              {order.status === "PAID" ? (
+                <form
+                  className="shipmentForm"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void createShipment(order.id);
+                  }}
+                >
+                  <input
+                    aria-label={`Carrier name for ${order.orderNo}`}
+                    placeholder="Carrier name"
+                    value={shipmentForms[order.id]?.carrierName ?? ""}
+                    onChange={(event) => setShipmentField(order.id, "carrierName", event.target.value)}
+                  />
+                  <input
+                    aria-label={`Carrier code for ${order.orderNo}`}
+                    placeholder="Carrier code"
+                    value={shipmentForms[order.id]?.carrierCode ?? ""}
+                    onChange={(event) => setShipmentField(order.id, "carrierCode", event.target.value)}
+                  />
+                  <input
+                    aria-label={`Tracking number for ${order.orderNo}`}
+                    placeholder="Tracking number"
+                    value={shipmentForms[order.id]?.trackingNumber ?? ""}
+                    onChange={(event) => setShipmentField(order.id, "trackingNumber", event.target.value)}
+                  />
+                  <input
+                    aria-label={`Tracking URL for ${order.orderNo}`}
+                    placeholder="Tracking URL"
+                    value={shipmentForms[order.id]?.trackingUrl ?? ""}
+                    onChange={(event) => setShipmentField(order.id, "trackingUrl", event.target.value)}
+                  />
+                  <button type="submit">Create shipment</button>
+                </form>
+              ) : null}
 
               <div className="paymentTable">
                 {order.payments.map((payment) => (

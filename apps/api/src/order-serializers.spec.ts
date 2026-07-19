@@ -25,6 +25,7 @@ describe("serializeOrder", () => {
       expiresAt: new Date("2026-07-19T00:30:00.000Z"),
       closedAt: null,
       createdAt: new Date("2026-07-19T00:00:00.000Z"),
+      shipment: null,
       updatedAt: new Date("2026-07-19T00:00:00.000Z"),
       items: [
         {
@@ -48,7 +49,7 @@ describe("serializeOrder", () => {
 
     expect(order.orderNo).toBe("ORD202607190001");
     expect(order.totalAmount).toBe("279.00");
+    expect(order.shipment).toBeNull();
     expect(order.items[0]?.productName).toBe("Tea set");
   });
 });
-

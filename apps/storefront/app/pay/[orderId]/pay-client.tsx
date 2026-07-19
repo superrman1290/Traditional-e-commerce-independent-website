@@ -6,7 +6,7 @@ import { SiteNav } from "../../components/site-nav";
 type Order = {
   id: string;
   orderNo: string;
-  status: "PENDING_PAYMENT" | "PAID" | "CLOSED";
+  status: "PENDING_PAYMENT" | "PAID" | "SHIPPED" | "COMPLETED" | "CLOSED";
   totalAmount: string;
   paidAt: string | null;
   expiresAt: string;

@@ -63,10 +63,11 @@ export function AccountMenu() {
 
     if (response.ok) {
       setUser((await response.json()) as User);
-    } else {
-      localStorage.removeItem("authToken");
-      setUser(null);
+      return;
     }
+
+    localStorage.removeItem("authToken");
+    setUser(null);
   }
 
   function openModal(mode: AuthMode) {
@@ -106,7 +107,7 @@ export function AccountMenu() {
     setIsSubmitting(false);
 
     if (!response.ok) {
-      setMessage("邮箱或密码不正确，请重试。");
+      setMessage("Email or password is incorrect.");
       return;
     }
 
@@ -121,14 +122,10 @@ export function AccountMenu() {
   }
 
   const displayName = user?.name ?? "Guest";
-  const identity = user ? "Registered customer" : "Guest visitor";
+  const identity = user ? resolveIdentity(user) : "Guest visitor";
 
   return (
-    <div
-      className={isModalOpen ? "accountMenu authOpen" : "accountMenu"}
-      onMouseEnter={openMenu}
-      onMouseLeave={scheduleCloseMenu}
-    >
+    <div className="accountMenu" onMouseEnter={openMenu} onMouseLeave={scheduleCloseMenu}>
       <button
         aria-expanded={isMenuOpen}
         aria-haspopup="true"
@@ -139,7 +136,13 @@ export function AccountMenu() {
       >
         Account
       </button>
-      <div className={isMenuOpen ? "accountDropdown open" : "accountDropdown"} role="menu">
+
+      <div
+        className={isMenuOpen ? "accountDropdown open" : "accountDropdown"}
+        role="menu"
+        onMouseEnter={openMenu}
+        onMouseLeave={scheduleCloseMenu}
+      >
         <div className="accountProfile">
           <div className="avatar" aria-hidden="true">
             {user ? initials(user.name) : "G"}
@@ -164,6 +167,9 @@ export function AccountMenu() {
               <button type="button" onClick={() => openModal("login")}>
                 Login
               </button>
+              <span aria-hidden="true" className="accountDivider">
+                |
+              </span>
               <button type="button" onClick={() => openModal("register")}>
                 Register
               </button>
@@ -180,35 +186,35 @@ export function AccountMenu() {
             role="dialog"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <h2>{authMode === "login" ? "登录" : "注册"}</h2>
+            <h2>{authMode === "login" ? "Login" : "Register"}</h2>
             <form className="formStack" onSubmit={(event) => void submitAuth(event)}>
               <label className="authField">
-                邮箱
+                Email
                 <input name="email" placeholder="user@example.com" required type="email" />
               </label>
               {authMode === "register" ? (
                 <label className="authField">
-                  用户名
+                  Username
                   <input name="name" placeholder="demo" required />
                 </label>
               ) : null}
               <label className="authField">
-                密码
+                Password
                 <input
                   minLength={6}
                   name="password"
-                  placeholder={authMode === "login" ? "请输入密码" : "至少 6 个字符"}
+                  placeholder={authMode === "login" ? "Enter your password" : "At least 6 characters"}
                   required
                   type="password"
                 />
               </label>
               <button className="authSubmit" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "提交中..." : authMode === "login" ? "登录" : "注册"}
+                {isSubmitting ? "Submitting..." : authMode === "login" ? "Login" : "Register"}
               </button>
             </form>
             {message ? <p className="formMessage">{message}</p> : null}
             <p className="authSwitch">
-              {authMode === "login" ? "还没有账号？" : "已有账号？"}
+              {authMode === "login" ? "No account yet?" : "Already have an account?"}
               <button
                 className="authSwitchButton"
                 type="button"
@@ -217,7 +223,7 @@ export function AccountMenu() {
                   setAuthMode(authMode === "login" ? "register" : "login");
                 }}
               >
-                {authMode === "login" ? "去注册" : "去登录"}
+                {authMode === "login" ? "Register" : "Login"}
               </button>
             </p>
           </section>
@@ -245,4 +251,15 @@ function maskEmail(email: string) {
   }
 
   return `${name.slice(0, 2)}***@${domain}`;
+}
+
+function resolveIdentity(user: User) {
+  const emailName = user.email.split("@")[0]?.toLowerCase();
+  const name = user.name.trim().toLowerCase();
+
+  if (name === "admin" || emailName === "admin") {
+    return "admin";
+  }
+
+  return "Registered customer";
 }

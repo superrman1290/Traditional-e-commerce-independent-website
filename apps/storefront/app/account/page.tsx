@@ -23,11 +23,32 @@ type Address = {
   isDefault: boolean;
 };
 
+type Order = {
+  id: string;
+  orderNo: string;
+  status: "PENDING_PAYMENT" | "PAID" | "SHIPPED" | "COMPLETED" | "CLOSED";
+  totalAmount: string;
+  paidAt: string | null;
+  shippedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  shipment: {
+    carrierName: string;
+    carrierCode: string | null;
+    trackingNumber: string;
+    trackingUrl: string | null;
+    shippedAt: string;
+    autoConfirmAt: string;
+    confirmedAt: string | null;
+  } | null;
+};
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -50,10 +71,12 @@ export default function AccountPage() {
     if (response.ok) {
       setUser((await response.json()) as User);
       await loadAddresses(token);
+      await loadOrders(token);
     } else {
       localStorage.removeItem("authToken");
       setUser(null);
       setAddresses([]);
+      setOrders([]);
     }
   }
 
@@ -68,6 +91,20 @@ export default function AccountPage() {
 
     if (response.ok) {
       setAddresses((await response.json()) as Address[]);
+    }
+  }
+
+  async function loadOrders(token = localStorage.getItem("authToken")) {
+    if (!token) {
+      return;
+    }
+
+    const response = await fetch(`${apiUrl}/orders`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      setOrders((await response.json()) as Order[]);
     }
   }
 
@@ -105,6 +142,25 @@ export default function AccountPage() {
     }
   }
 
+  async function confirmReceipt(orderId: string) {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      return;
+    }
+
+    const response = await fetch(`${apiUrl}/orders/${orderId}/confirm-receipt`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      setMessage("Receipt confirmed.");
+      await loadOrders(token);
+    } else {
+      setMessage("Could not confirm receipt.");
+    }
+  }
+
   function logout() {
     localStorage.removeItem("authToken");
     setUser(null);
@@ -119,7 +175,7 @@ export default function AccountPage() {
 
       <section className="accountLayout">
         <div className="detailPanel">
-          <span>Stage 2</span>
+          <span>Stage 5</span>
           <h1>{user ? "Account" : "Guest account"}</h1>
           {user ? (
             <>
@@ -175,6 +231,76 @@ export default function AccountPage() {
             </>
           ) : (
             <p>Login to manage shipping addresses.</p>
+          )}
+        </div>
+
+        <div className="detailPanel fullSpan">
+          <span>Orders and logistics</span>
+          <h2>My orders</h2>
+          {user ? (
+            <div className="orderList">
+              {orders.map((order) => (
+                <article className="orderItem" key={order.id}>
+                  <div className="orderItemHead">
+                    <div>
+                      <strong>{order.orderNo}</strong>
+                      <span>{order.status}</span>
+                    </div>
+                    <strong>CNY {order.totalAmount}</strong>
+                  </div>
+                  <dl className="orderMeta">
+                    <div>
+                      <dt>Created</dt>
+                      <dd>{new Date(order.createdAt).toLocaleString()}</dd>
+                    </div>
+                    <div>
+                      <dt>Paid</dt>
+                      <dd>{order.paidAt ? new Date(order.paidAt).toLocaleString() : "-"}</dd>
+                    </div>
+                    <div>
+                      <dt>Shipped</dt>
+                      <dd>{order.shippedAt ? new Date(order.shippedAt).toLocaleString() : "-"}</dd>
+                    </div>
+                    <div>
+                      <dt>Completed</dt>
+                      <dd>{order.completedAt ? new Date(order.completedAt).toLocaleString() : "-"}</dd>
+                    </div>
+                  </dl>
+                  {order.shipment ? (
+                    <div className="shipmentBox">
+                      <div>
+                        <strong>{order.shipment.carrierName}</strong>
+                        <span>{order.shipment.carrierCode ?? "Carrier code not set"}</span>
+                      </div>
+                      <div>
+                        <span>Tracking number</span>
+                        <strong>{order.shipment.trackingNumber}</strong>
+                      </div>
+                      <div>
+                        <span>Auto confirm</span>
+                        <strong>{new Date(order.shipment.autoConfirmAt).toLocaleString()}</strong>
+                      </div>
+                      <div className="shipmentActions">
+                        {order.shipment.trackingUrl ? (
+                          <a className="detailLink" href={order.shipment.trackingUrl} target="_blank" rel="noreferrer">
+                            Track package
+                          </a>
+                        ) : null}
+                        {order.status === "SHIPPED" ? (
+                          <button type="button" onClick={() => void confirmReceipt(order.id)}>
+                            Confirm receipt
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : order.status === "PAID" ? (
+                    <p className="mutedCopy">Awaiting shipment.</p>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p>Login to view order logistics.</p>
           )}
         </div>
       </section>

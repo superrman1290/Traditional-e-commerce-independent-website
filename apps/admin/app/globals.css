@@ -68,7 +68,7 @@ a {
 .metrics {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   margin-top: 32px;
 }
 
@@ -252,6 +252,36 @@ input {
   border-top: 1px solid #eef1f4;
 }
 
+.shipmentTable {
+  border-top: 1px solid #eef1f4;
+  display: grid;
+}
+
+.shipmentTable div {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.3fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr);
+  min-height: 54px;
+  padding: 12px 18px;
+}
+
+.shipmentTable div + div {
+  border-top: 1px solid #eef1f4;
+}
+
+.shipmentTable span {
+  color: #637282;
+}
+
+.shipmentForm {
+  border-top: 1px solid #eef1f4;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  padding: 18px;
+}
+
 @media (max-width: 760px) {
   .shell {
     grid-template-columns: 1fr;
@@ -282,7 +312,9 @@ input {
   .editor,
   .skuTable div,
   .orderTable div,
-  .paymentTable div {
+  .paymentTable div,
+  .shipmentTable div,
+  .shipmentForm {
     grid-template-columns: 1fr;
   }
 }

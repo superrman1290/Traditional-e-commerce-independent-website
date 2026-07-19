@@ -1,7 +1,8 @@
-import type { Order, OrderItem, Payment, PaymentCallback, Refund } from "@prisma/client";
+import type { Order, OrderItem, Payment, PaymentCallback, Refund, Shipment } from "@prisma/client";
 
 export type OrderWithItems = Order & {
   items: OrderItem[];
+  shipment?: Shipment | null;
   payments?: Array<Payment & { callbacks?: PaymentCallback[]; refunds?: Refund[] }>;
 };
 
@@ -26,6 +27,19 @@ export function serializeOrder(order: OrderWithItems) {
     expiresAt: order.expiresAt.toISOString(),
     closedAt: order.closedAt?.toISOString() ?? null,
     createdAt: order.createdAt.toISOString(),
+    shipment: order.shipment
+      ? {
+          id: order.shipment.id,
+          carrierName: order.shipment.carrierName,
+          carrierCode: order.shipment.carrierCode,
+          trackingNumber: order.shipment.trackingNumber,
+          trackingUrl: order.shipment.trackingUrl,
+          shippedAt: order.shipment.shippedAt.toISOString(),
+          autoConfirmAt: order.shipment.autoConfirmAt.toISOString(),
+          confirmedAt: order.shipment.confirmedAt?.toISOString() ?? null,
+          createdAt: order.shipment.createdAt.toISOString()
+        }
+      : null,
     items: order.items.map((item) => ({
       id: item.id,
       skuId: item.skuId,

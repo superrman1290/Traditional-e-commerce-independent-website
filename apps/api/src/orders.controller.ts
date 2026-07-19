@@ -1,6 +1,11 @@
 import { Body, Controller, Get, Headers, Inject, Param, Post, Query } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { type CheckoutSummaryInput, type CreateOrderInput, OrdersService } from "./orders.service";
+import {
+  type CheckoutSummaryInput,
+  type CreateOrderInput,
+  type CreateShipmentInput,
+  OrdersService
+} from "./orders.service";
 
 @Controller()
 export class OrdersController {
@@ -37,6 +42,12 @@ export class OrdersController {
     return this.ordersService.getUserOrder(user.id, id);
   }
 
+  @Post("orders/:id/confirm-receipt")
+  async confirmReceipt(@Headers("authorization") authorization: string | undefined, @Param("id") id: string) {
+    const user = await this.authService.requireUser(authorization);
+    return this.ordersService.confirmReceipt(user.id, id);
+  }
+
   @Post("orders/expire")
   closeExpiredOrders() {
     return this.ordersService.closeExpiredOrders();
@@ -47,9 +58,13 @@ export class OrdersController {
     return this.ordersService.listAdminOrders();
   }
 
+  @Post("admin/orders/:id/shipment")
+  createShipment(@Param("id") id: string, @Body() body: CreateShipmentInput) {
+    return this.ordersService.createShipment(id, body);
+  }
+
   @Post("admin/orders/expire")
   closeExpiredAdminOrders() {
     return this.ordersService.closeExpiredOrders();
   }
 }
-
