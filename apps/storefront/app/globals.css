@@ -70,6 +70,11 @@ input {
   padding: 0 14px;
 }
 
+input[type="number"] {
+  min-width: 96px;
+  width: 110px;
+}
+
 .categoryTabs {
   display: flex;
   flex-wrap: wrap;
@@ -197,6 +202,19 @@ button:disabled {
   font-size: 28px;
 }
 
+.cartActions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.formMessage {
+  color: #2f6b42;
+  font-weight: 600;
+}
+
 .specList {
   border-top: 1px solid #dfe6dc;
   display: grid;
@@ -215,6 +233,138 @@ button:disabled {
   margin: 0;
 }
 
+.cartSummary {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cartSummary strong {
+  font-size: 28px;
+}
+
+.cartList {
+  display: grid;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.cartItem {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dfe6dc;
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 120px minmax(0, 1fr) 110px auto auto;
+  padding: 14px;
+}
+
+.cartItem img {
+  aspect-ratio: 4 / 3;
+  border-radius: 6px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.cartItem div {
+  display: grid;
+  gap: 6px;
+}
+
+.cartItem span,
+.cartFooter span,
+.addressItem span,
+.cartSummary small {
+  color: #53645a;
+}
+
+.cartBadges {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+mark {
+  background: #fff4cc;
+  border-radius: 6px;
+  color: #6d4d00;
+  padding: 4px 8px;
+}
+
+.emptyState {
+  background: #ffffff;
+  border: 1px solid #dfe6dc;
+  border-radius: 8px;
+  padding: 32px;
+}
+
+.cartFooter {
+  align-items: center;
+  border-top: 1px solid #dfe6dc;
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  margin-top: 28px;
+  padding-top: 18px;
+}
+
+.accountLayout {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  margin-top: 48px;
+}
+
+.detailPanel h2 {
+  margin: 0;
+}
+
+.compactTabs {
+  margin-top: 0;
+}
+
+.formStack,
+.formGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.formGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fullSpan {
+  grid-column: 1 / -1;
+}
+
+.checkRow {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.checkRow input {
+  min-height: auto;
+  min-width: auto;
+  width: auto;
+}
+
+.addressList {
+  display: grid;
+  gap: 10px;
+}
+
+.addressItem {
+  border: 1px solid #dfe6dc;
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
 @media (max-width: 640px) {
   .shell {
     padding: 18px;
@@ -226,7 +376,8 @@ button:disabled {
   }
 
   .catalogHeader,
-  .detailLayout {
+  .detailLayout,
+  .accountLayout {
     grid-template-columns: 1fr;
   }
 
@@ -240,6 +391,10 @@ button:disabled {
     width: 100%;
   }
 
+  input[type="number"] {
+    width: 100%;
+  }
+
   .detailPanel {
     margin-top: 32px;
     padding: 24px;
@@ -247,5 +402,23 @@ button:disabled {
 
   .catalogHeader h1 {
     font-size: 32px;
+  }
+
+  .cartItem {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .cartItem img {
+    max-width: 180px;
+  }
+
+  .cartFooter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
   }
 }

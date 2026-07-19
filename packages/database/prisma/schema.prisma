@@ -30,6 +30,73 @@ enum InventoryChangeType {
   STOCK_OUT
 }
 
+enum CartStatus {
+  ACTIVE
+  MERGED
+  ABANDONED
+}
+
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  email        String        @unique @db.VarChar(180)
+  name         String        @db.VarChar(120)
+  passwordHash String        @map("password_hash")
+  phone        String?       @db.VarChar(40)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  addresses    UserAddress[]
+  sessions     UserSession[]
+  carts        Cart[]
+
+  @@map("users")
+}
+
+model UserSession {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  tokenHash  String   @unique @map("token_hash") @db.VarChar(128)
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+model GuestSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  carts     Cart[]
+
+  @@index([expiresAt])
+  @@map("guest_sessions")
+}
+
+model UserAddress {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  label         String   @db.VarChar(80)
+  recipientName String   @map("recipient_name") @db.VarChar(120)
+  phone         String   @db.VarChar(40)
+  country       String   @default("CN") @db.VarChar(80)
+  province      String   @db.VarChar(120)
+  city          String   @db.VarChar(120)
+  district      String?  @db.VarChar(120)
+  line1         String   @map("line_1") @db.VarChar(240)
+  postalCode    String?  @map("postal_code") @db.VarChar(40)
+  isDefault     Boolean  @default(false) @map("is_default")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_addresses")
+}
+
 model Category {
   id          String    @id @default(uuid()) @db.Uuid
   name        String    @db.VarChar(120)
@@ -121,9 +188,42 @@ model ProductSku {
   updatedAt           DateTime          @updatedAt @map("updated_at")
   product             Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
   inventoryRecords    InventoryRecord[]
+  cartItems           CartItem[]
 
   @@index([productId])
   @@map("product_skus")
+}
+
+model Cart {
+  id             String        @id @default(uuid()) @db.Uuid
+  userId         String?       @map("user_id") @db.Uuid
+  guestSessionId String?       @map("guest_session_id") @db.Uuid
+  status         CartStatus    @default(ACTIVE)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestSession   GuestSession? @relation(fields: [guestSessionId], references: [id], onDelete: Cascade)
+  items          CartItem[]
+
+  @@index([userId, status])
+  @@index([guestSessionId, status])
+  @@map("carts")
+}
+
+model CartItem {
+  id                String     @id @default(uuid()) @db.Uuid
+  cartId            String     @map("cart_id") @db.Uuid
+  skuId             String     @map("sku_id") @db.Uuid
+  quantity          Int
+  unitPriceSnapshot Decimal    @map("unit_price_snapshot") @db.Decimal(12, 2)
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+  cart              Cart       @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  sku               ProductSku @relation(fields: [skuId], references: [id], onDelete: Restrict)
+
+  @@unique([cartId, skuId])
+  @@index([skuId])
+  @@map("cart_items")
 }
 
 model InventoryRecord {

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 
 type Product = {
   id: string;
@@ -65,34 +65,36 @@ export default function StorefrontHomePage() {
 
   return (
     <main className="shell">
-      <nav className="nav" aria-label="主导航">
+      <nav className="nav" aria-label="Main navigation">
         <strong>Traditional Commerce</strong>
         <div>
-          <a href="/">商品</a>
-          <a href="http://localhost:3001">后台</a>
+          <a href="/">Products</a>
+          <a href="/cart">Cart</a>
+          <a href="/account">Account</a>
+          <a href="http://localhost:3001">Admin</a>
         </div>
       </nav>
 
       <section className="catalogHeader">
         <div>
-          <p>阶段 1</p>
-          <h1>商品目录</h1>
+          <p>Stage 2</p>
+          <h1>Product catalog</h1>
         </div>
         <input
-          aria-label="搜索商品"
-          placeholder="搜索商品"
+          aria-label="Search products"
+          placeholder="Search products"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
       </section>
 
-      <div className="categoryTabs" aria-label="商品分类">
+      <div className="categoryTabs" aria-label="Product categories">
         <button
           className={selectedCategory === "" ? "active" : ""}
           type="button"
           onClick={() => setSelectedCategory("")}
         >
-          全部
+          All
         </button>
         {categories
           .filter((category) => category.isActive)
@@ -108,7 +110,7 @@ export default function StorefrontHomePage() {
           ))}
       </div>
 
-      <section className="productGrid" aria-label="商品列表">
+      <section className="productGrid" aria-label="Product list">
         {visibleProducts.map((product) => {
           const firstSku = product.skus[0];
           const image = product.images[0];
@@ -125,15 +127,15 @@ export default function StorefrontHomePage() {
                 />
               ) : null}
               <div className="productBody">
-                <span>{product.category?.name ?? "未分类"}</span>
+                <span>{product.category?.name ?? "Uncategorized"}</span>
                 <h2>{product.name}</h2>
                 <p>{product.summary}</p>
                 <div className="productMeta">
                   <strong>¥{firstSku?.price ?? "0.00"}</strong>
-                  <small>{firstSku ? `可售 ${firstSku.availableStock}` : "暂无 SKU"}</small>
+                  <small>{firstSku ? `Available ${firstSku.availableStock}` : "No SKU"}</small>
                 </div>
                 <a className="detailLink" href={`/products/${product.slug}`}>
-                  查看详情
+                  View details
                 </a>
               </div>
             </article>
@@ -143,3 +145,4 @@ export default function StorefrontHomePage() {
     </main>
   );
 }
+
