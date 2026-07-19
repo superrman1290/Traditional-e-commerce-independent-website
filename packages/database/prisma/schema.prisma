@@ -93,6 +93,18 @@ enum CartReminderStatus {
   SKIPPED
 }
 
+enum AnalyticsEventType {
+  PAGE_VIEW
+  PRODUCT_VIEW
+  ADD_TO_CART
+  CHECKOUT_STARTED
+  ORDER_CREATED
+  PAYMENT_SUCCEEDED
+  FAVORITE_ADDED
+  NEWSLETTER_SUBSCRIBED
+  CONTACT_SUBMITTED
+}
+
 model User {
   id           String        @id @default(uuid()) @db.Uuid
   email        String        @unique @db.VarChar(180)
@@ -108,6 +120,7 @@ model User {
   favorites    Favorite[]
   afterSales   AfterSaleRequest[]
   contactMessages ContactMessage[]
+  behaviorEvents BehaviorEvent[]
 
   @@map("users")
 }
@@ -132,6 +145,7 @@ model GuestSession {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   carts     Cart[]
+  behaviorEvents BehaviorEvent[]
 
   @@index([expiresAt])
   @@map("guest_sessions")
@@ -188,6 +202,7 @@ model Product {
   options     ProductOption[]
   skus        ProductSku[]
   favorites   Favorite[]
+  behaviorEvents BehaviorEvent[]
 
   @@index([categoryId])
   @@index([status])
@@ -541,6 +556,33 @@ model AbandonedCartReminder {
   @@index([status, scheduledAt])
   @@index([cartId])
   @@map("abandoned_cart_reminders")
+}
+
+model BehaviorEvent {
+  id             String             @id @default(uuid()) @db.Uuid
+  userId         String?            @map("user_id") @db.Uuid
+  guestSessionId String?            @map("guest_session_id") @db.Uuid
+  productId      String?            @map("product_id") @db.Uuid
+  anonymousId    String?            @map("anonymous_id") @db.VarChar(120)
+  eventType      AnalyticsEventType @map("event_type")
+  path           String             @db.VarChar(500)
+  source         String?            @db.VarChar(120)
+  medium         String?            @db.VarChar(120)
+  campaign       String?            @db.VarChar(160)
+  referrer       String?
+  metadata       Json?
+  occurredAt     DateTime           @default(now()) @map("occurred_at")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  user           User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestSession   GuestSession?      @relation(fields: [guestSessionId], references: [id], onDelete: SetNull)
+  product        Product?           @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([eventType, occurredAt])
+  @@index([userId, occurredAt])
+  @@index([guestSessionId, occurredAt])
+  @@index([productId, occurredAt])
+  @@index([source, occurredAt])
+  @@map("behavior_events")
 }
 
 model OrderItem {

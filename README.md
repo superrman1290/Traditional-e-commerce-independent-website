@@ -1,101 +1,93 @@
 # Traditional Ecommerce Independent Website
 
-单商户 B2C 实物商品电商独立站。当前仓库已完成 **阶段 4：支付系统**。
+Single-merchant B2C physical goods ecommerce site. Current milestone: **Stage 7: Analytics and launch readiness**.
 
-## 当前功能
+## Current Features
 
-- Monorepo: npm workspaces
-- 前台：Next.js + TypeScript，商品列表、商品详情、账户、地址、购物车、结算页和支付页
-- 后台：Next.js + TypeScript，商品、SKU、库存、订单和支付记录查看
-- API：NestJS + TypeScript，健康检查、商品、库存、认证、地址、购物车、结算、订单和支付
-- 数据库：PostgreSQL + Prisma migrations
-- 缓存/队列预留：Redis
-- 本地文件存储：MinIO
-- 测试：Vitest + Playwright
-- CI：GitHub Actions
+- Storefront: product catalog, product detail, account menu, login/register modal, cart, checkout, payment, order lookup, after-sales, favorites, support, privacy policy and user agreement.
+- Admin: product, SKU, inventory, order, payment, shipping, after-sales, marketing, analytics and launch readiness views.
+- API: NestJS + TypeScript with product, auth, cart, address, checkout, order, payment, shipping, after-sales, marketing and analytics modules.
+- Database: PostgreSQL + Prisma migrations.
+- Local infrastructure: Redis and MinIO reserved by Docker Compose.
+- Tests: Vitest workspaces and Playwright.
+- CI: GitHub Actions.
 
-阶段 4 不包含发货、物流、确认收货或售后流程。Stripe 通道提供正式支付适配器骨架，本地完整验收使用 `TEST` 支付通道。
-
-## 目录结构
+## Project Structure
 
 ```text
 apps/
-  storefront/        用户购物前台
-  admin/             商家运营后台
-  api/               后端 API
+  storefront/        Customer shopping frontend
+  admin/             Merchant operations dashboard
+  api/               Backend API
 packages/
-  database/          Prisma schema、迁移和 seed
-  shared/            公共类型和工具
-  ui/                公共 UI 组件
-  config/            公共配置读取
+  database/          Prisma schema, migrations and seed
+  shared/            Shared types and utilities
+  ui/                Shared UI package placeholder
+  config/            Shared configuration package
 docs/
   PRD.md
-  STAGE_0.md
-  STAGE_1.md
-  STAGE_2.md
-  STAGE_3.md
-  STAGE_4.md
+  STAGE_0.md ... STAGE_7.md
+  DEPLOYMENT.md
+scripts/
+  run-dev.mjs
+  backup-database.ps1
 ```
 
-## Windows 本地启动
+## Windows Local Startup
 
-1. 安装 Node.js 20.11 或更高版本、Docker Desktop 和 Git。
-2. 复制环境变量文件：
+1. Install Node.js 20.11 or newer, Docker Desktop and Git.
+
+2. Copy environment variables:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-3. 启动基础设施：
+3. Start infrastructure:
 
 ```powershell
 docker compose up -d
 ```
 
-4. 安装依赖：
-
-```powershell
-npm install
-```
-
-如果 PowerShell 提示 `npm.ps1 cannot be loaded because running scripts is disabled`，可改用：
+4. Install dependencies:
 
 ```powershell
 npm.cmd install
 ```
 
-5. 生成 Prisma Client、应用迁移并写入种子数据：
+5. Generate Prisma Client, apply migrations and seed data:
 
 ```powershell
-npm run prisma:generate
-npm run prisma:deploy
-npm run db:seed
+npm.cmd run prisma:generate
+npm.cmd run prisma:deploy
+npm.cmd run db:seed
 ```
 
-6. 启动三个应用：
+6. Start all apps:
 
 ```powershell
-npm run dev
+npm.cmd run dev
 ```
 
-默认地址：
+Default URLs:
 
-- 前台：http://localhost:3000
-- 后台：http://localhost:3001
-- API 健康检查：http://localhost:4000/health
-- PostgreSQL：localhost:5433
-- Redis：localhost:6380
-- MinIO 控制台：http://localhost:9001
+- Storefront: http://localhost:3000
+- Admin: http://localhost:3001
+- API health: http://localhost:4000/health
+- PostgreSQL: localhost:5433
+- Redis: localhost:6380
+- MinIO console: http://localhost:9001
 
-如果本机 `3000` 已被其他项目占用，可在 `apps/storefront` 下临时运行：
+If port `3000` is already used, run the storefront manually on another port:
 
 ```powershell
+cd apps\storefront
 node ..\..\node_modules\next\dist\bin\next dev -p 3002
 ```
 
-## API
+## API Surface
 
-公开接口：
+Public and customer APIs:
 
 - `GET /health`
 - `GET /categories`
@@ -118,6 +110,7 @@ node ..\..\node_modules\next\dist\bin\next dev -p 3002
 - `POST /orders`
 - `GET /orders`
 - `GET /orders/:id`
+- `POST /orders/:id/confirm-receipt`
 - `GET /orders/:id/payments`
 - `POST /orders/expire`
 - `POST /payments`
@@ -125,8 +118,18 @@ node ..\..\node_modules\next\dist\bin\next dev -p 3002
 - `POST /payments/test/simulate`
 - `POST /payments/test/callback`
 - `POST /payments/stripe/callback`
+- `GET /marketing`
+- `POST /newsletter-subscriptions`
+- `POST /contact-messages`
+- `GET /favorites`
+- `POST /favorites`
+- `DELETE /favorites/:productId`
+- `POST /cart/reminders`
+- `POST /after-sales`
+- `GET /after-sales`
+- `POST /analytics/events`
 
-后台接口：
+Admin APIs:
 
 - `GET /admin/products`
 - `POST /admin/products`
@@ -134,45 +137,52 @@ node ..\..\node_modules\next\dist\bin\next dev -p 3002
 - `POST /admin/inventory/adjustments`
 - `GET /admin/inventory/records`
 - `GET /admin/orders`
+- `POST /admin/orders/:id/shipment`
 - `POST /admin/orders/expire`
 - `GET /admin/payments`
 - `POST /admin/payments/:id/refunds`
+- `GET /admin/marketing`
+- `PATCH /admin/contact-messages/:id/status`
+- `GET /admin/after-sales`
+- `PATCH /admin/after-sales/:id`
+- `GET /admin/analytics`
 
-购物车接口优先读取 `Authorization: Bearer <token>`。未登录时使用 `X-Guest-Session-Id`。结算、订单和发起支付接口需要登录。支付回调接口通过签名验签保护。
+Cart APIs prefer `Authorization: Bearer <token>`. Guest carts use `X-Guest-Session-Id`. Checkout, order and payment creation require login.
 
-## 数据库
+## Database
 
-阶段 4 新增业务表：
+Core business tables include users, sessions, products, SKUs, inventory records, carts, addresses, orders, order item snapshots, payments, callbacks, refunds, shipments, after-sale requests, favorites, subscriptions, contact messages, FAQ entries, abandoned cart reminders and behavior events.
 
-- `payments`
-- `payment_callbacks`
-- `refunds`
-
-阶段 4 还为 `orders` 增加 `paid_amount`、`paid_currency`、`paid_at` 字段，并为订单状态增加 `PAID`。
-
-常用命令：
-
-```powershell
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:deploy
-npm run db:seed
-```
-
-## 验证命令
+Common commands:
 
 ```powershell
-npm run lint
-npm run typecheck
-npm run test
-npm run test:e2e
-npm run build
+npm.cmd run prisma:generate
+npm.cmd run prisma:migrate
+npm.cmd run prisma:deploy
+npm.cmd run db:seed
+npm.cmd run db:backup
 ```
 
-## 已知问题
+Backup files are written to `backups/`, which is ignored by Git.
 
-- `npm run dev` 是长运行命令，需要使用 `Ctrl+C` 停止。
-- 当前后台接口尚未接入登录和权限控制。
-- 当前 Stripe 通道是正式支付适配器骨架，需要配置真实密钥并替换为平台 SDK 调用后才能用于生产收款。
-- 当前商品图片使用远程 Unsplash URL；生产环境应替换为 MinIO/S3 等对象存储中的商家图片。
-- 在 Windows 上如果一边运行 Next dev 服务一边执行 `next build`，`.next` 缓存可能出现开发产物错位；重启 dev 服务并清理对应应用的 `.next` 可恢复。
+## Verification
+
+```powershell
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd run test
+npm.cmd run test:e2e
+npm.cmd run build
+```
+
+## Deployment
+
+See `docs/DEPLOYMENT.md` for production environment variables, HTTPS guidance, backup steps and security checks.
+
+## Known Issues
+
+- `npm run dev` is a long-running command and must be stopped with `Ctrl+C`.
+- The current admin UI is a local operations dashboard. Add real admin authentication and role permissions before production use.
+- Stripe support is an adapter skeleton. Configure real secrets and provider SDK calls before collecting production payments.
+- Product images currently use remote demo URLs. Production should use MinIO, S3 or another object storage provider.
+- On Windows, running Next dev while building can leave `.next` cache artifacts. Restart the dev server and clear the affected app cache if needed.

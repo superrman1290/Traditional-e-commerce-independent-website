@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 import { AddressesController } from "./addresses.controller";
 import { AddressesService } from "./addresses.service";
+import { AnalyticsController } from "./analytics.controller";
+import { AnalyticsService } from "./analytics.service";
 import { AfterSalesController } from "./after-sales.controller";
 import { AfterSalesService } from "./after-sales.service";
 import { AuthController } from "./auth.controller";
@@ -28,7 +30,8 @@ import { ProductsService } from "./products.service";
     OrdersController,
     PaymentsController,
     MarketingController,
-    AfterSalesController
+    AfterSalesController,
+    AnalyticsController
   ],
   providers: [
     PrismaService,
@@ -39,7 +42,8 @@ import { ProductsService } from "./products.service";
     OrdersService,
     PaymentsService,
     MarketingService,
-    AfterSalesService
+    AfterSalesService,
+    AnalyticsService
   ]
 })
 export class AppModule {}

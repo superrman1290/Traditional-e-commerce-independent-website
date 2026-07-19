@@ -7,6 +7,8 @@ export function SiteNav() {
       <div className="navLinks">
         <a href="/">Products</a>
         <a href="/support">Support</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
         <a href="/cart">Cart</a>
         <AccountMenu />
       </div>

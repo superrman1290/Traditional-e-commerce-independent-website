@@ -27,6 +27,18 @@ type Product = {
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+function getAnonymousId() {
+  const storageKey = "anonymousVisitorId";
+  const existing = localStorage.getItem(storageKey);
+  if (existing) {
+    return existing;
+  }
+
+  const nextId = crypto.randomUUID();
+  localStorage.setItem(storageKey, nextId);
+  return nextId;
+}
+
 export function ProductDetailClient({ slug }: { slug: string }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedSkuCode, setSelectedSkuCode] = useState("");
@@ -52,6 +64,29 @@ export function ProductDetailClient({ slug }: { slug: string }) {
     () => product?.skus.find((sku) => sku.skuCode === selectedSkuCode),
     [product, selectedSkuCode]
   );
+
+  useEffect(() => {
+    if (product) {
+      void trackEvent("PRODUCT_VIEW", {
+        productId: product.id,
+        metadata: { slug: product.slug }
+      });
+    }
+  }, [product]);
+
+  async function trackEvent(eventType: "PRODUCT_VIEW" | "ADD_TO_CART", extra: Record<string, unknown>) {
+    await fetch(`${apiUrl}/analytics/events`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventType,
+        path: `/products/${slug}`,
+        anonymousId: getAnonymousId(),
+        guestSessionId: localStorage.getItem("guestSessionId") ?? undefined,
+        ...extra
+      })
+    });
+  }
 
   async function getGuestSessionId() {
     const existing = localStorage.getItem("guestSessionId");
@@ -94,6 +129,13 @@ export function ProductDetailClient({ slug }: { slug: string }) {
       }
 
       setCartMessage("Added to cart.");
+      await trackEvent("ADD_TO_CART", {
+        productId: product?.id,
+        metadata: {
+          skuCode: selectedSku.skuCode,
+          quantity
+        }
+      });
     } catch {
       setCartMessage("Could not add this SKU. Check stock and try again.");
     } finally {

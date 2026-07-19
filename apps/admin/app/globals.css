@@ -319,6 +319,44 @@ input {
   color: #637282;
 }
 
+.analyticsGrid {
+  border-top: 1px solid #eef1f4;
+  display: grid;
+  gap: 0;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.analyticsGrid div {
+  border-right: 1px solid #eef1f4;
+  display: grid;
+  gap: 8px;
+  min-height: 100px;
+  padding: 18px;
+}
+
+.analyticsGrid span {
+  color: #637282;
+}
+
+.analyticsGrid strong {
+  font-size: 24px;
+}
+
+.splitTables {
+  border-top: 1px solid #eef1f4;
+  display: grid;
+  gap: 0;
+  grid-template-columns: 1fr 1fr;
+}
+
+.splitTables .marketingTable {
+  border-top: 0;
+}
+
+.splitTables .marketingTable + .marketingTable {
+  border-left: 1px solid #eef1f4;
+}
+
 @media (max-width: 760px) {
   .shell {
     grid-template-columns: 1fr;
@@ -352,8 +390,15 @@ input {
   .paymentTable div,
   .shipmentTable div,
   .shipmentForm,
+  .analyticsGrid,
+  .splitTables,
   .marketingTable div,
   .marketingTable.compact div {
     grid-template-columns: 1fr;
+  }
+
+  .splitTables .marketingTable + .marketingTable {
+    border-left: 0;
+    border-top: 1px solid #eef1f4;
   }
 }

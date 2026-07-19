@@ -856,6 +856,41 @@ mark {
   gap: 4px;
 }
 
+.policyPage {
+  background: #ffffff;
+  border: 1px solid #dfe6dc;
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  margin-top: 48px;
+  max-width: 920px;
+  padding: 32px;
+}
+
+.policyPage > p,
+.policyPage h1,
+.policyPage h2,
+.policyPage article p {
+  margin: 0;
+}
+
+.policyPage > p,
+.policyPage article p {
+  color: #53645a;
+}
+
+.policyPage h1 {
+  font-size: 36px;
+  line-height: 1.15;
+}
+
+.policyPage article {
+  border-top: 1px solid #dfe6dc;
+  display: grid;
+  gap: 8px;
+  padding-top: 18px;
+}
+
 @media (max-width: 640px) {
   .shell {
     padding: 18px;
@@ -941,6 +976,10 @@ mark {
 
   .catalogHeader h1 {
     font-size: 32px;
+  }
+
+  .policyPage {
+    padding: 24px;
   }
 
   .cartItem {

@@ -7,7 +7,7 @@ test-results/
 .env
 .env.*
 !.env.example
+backups/
 *.log
 *.tsbuildinfo
 packages/database/generated/
-

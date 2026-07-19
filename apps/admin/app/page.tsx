@@ -77,6 +77,60 @@ type MarketingRecords = {
   }>;
 };
 
+type AnalyticsDashboard = {
+  period: {
+    from: string;
+    to: string;
+    days: number;
+  };
+  metrics: {
+    revenue: string;
+    revenueChange: string;
+    orderCount: number;
+    averageOrderValue: string;
+    pageViews: number;
+    visitors: number;
+    checkoutStarts: number;
+    conversionRate: string;
+    activeUsers: number;
+  };
+  dailySales: Array<{
+    date: string;
+    revenue: string;
+    orders: number;
+  }>;
+  productSales: Array<{
+    productId: string;
+    productName: string;
+    productSlug: string;
+    quantity: number;
+    revenue: string;
+  }>;
+  trafficSources: Array<{
+    source: string;
+    count: number;
+  }>;
+  behaviorEvents: Array<{
+    eventType: string;
+    count: number;
+  }>;
+  orderStatusCounts: Array<{
+    status: string;
+    count: number;
+  }>;
+  securityChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+  }>;
+  launchReadiness: {
+    backupCommand: string;
+    deploymentGuide: string;
+    privacyPolicy: string;
+    termsOfService: string;
+  };
+};
+
 type Order = {
   id: string;
   orderNo: string;
@@ -135,6 +189,7 @@ export default function AdminHomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [afterSales, setAfterSales] = useState<AfterSaleRequest[]>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsDashboard | null>(null);
   const [marketing, setMarketing] = useState<MarketingRecords>({
     contacts: [],
     subscriptions: [],
@@ -195,8 +250,15 @@ export default function AdminHomePage() {
     }
   }
 
+  async function loadAnalytics() {
+    const response = await fetch(`${apiUrl}/admin/analytics`);
+    if (response.ok) {
+      setAnalytics((await response.json()) as AnalyticsDashboard);
+    }
+  }
+
   async function refreshAll() {
-    await Promise.all([loadProducts(), loadOrders(), loadAfterSales(), loadMarketing()]);
+    await Promise.all([loadProducts(), loadOrders(), loadAfterSales(), loadMarketing(), loadAnalytics()]);
   }
 
   useEffect(() => {
@@ -365,14 +427,16 @@ export default function AdminHomePage() {
         <a href="#orders">Orders</a>
         <a href="#after-sales">After-sales</a>
         <a href="#marketing">Marketing</a>
+        <a href="#analytics">Analytics</a>
+        <a href="#launch">Launch</a>
         <a href={storefrontUrl}>Storefront</a>
       </aside>
 
       <section className="workspace">
         <header className="pageHeader">
           <div>
-            <p>Stage 6</p>
-            <h1>Catalog, Orders And Marketing</h1>
+            <p>Stage 7</p>
+            <h1>Operations, Analytics And Launch</h1>
           </div>
           <button type="button" onClick={() => void refreshAll()}>
             Refresh
@@ -416,7 +480,201 @@ export default function AdminHomePage() {
             <span>Contacts</span>
             <strong>{marketing.contacts.length}</strong>
           </article>
+          <article>
+            <span>30-day revenue</span>
+            <strong>CNY {analytics?.metrics.revenue ?? "0.00"}</strong>
+          </article>
+          <article>
+            <span>Conversion</span>
+            <strong>{analytics?.metrics.conversionRate ?? "0.00"}%</strong>
+          </article>
+          <article>
+            <span>Page views</span>
+            <strong>{analytics?.metrics.pageViews ?? 0}</strong>
+          </article>
         </div>
+
+        {analytics ? (
+          <section className="table" id="analytics" aria-label="Analytics dashboard">
+            <div className="sectionHeader">
+              <div>
+                <p>
+                  {new Date(analytics.period.from).toLocaleDateString()} - {new Date(analytics.period.to).toLocaleDateString()}
+                </p>
+                <h2>Analytics</h2>
+              </div>
+            </div>
+
+            <article>
+              <div className="productRow">
+                <div>
+                  <span>Sales overview</span>
+                  <h2>Revenue and conversion</h2>
+                </div>
+              </div>
+              <div className="analyticsGrid">
+                <div>
+                  <span>Revenue change</span>
+                  <strong>{analytics.metrics.revenueChange}%</strong>
+                </div>
+                <div>
+                  <span>Orders</span>
+                  <strong>{analytics.metrics.orderCount}</strong>
+                </div>
+                <div>
+                  <span>Average order value</span>
+                  <strong>CNY {analytics.metrics.averageOrderValue}</strong>
+                </div>
+                <div>
+                  <span>Visitors</span>
+                  <strong>{analytics.metrics.visitors}</strong>
+                </div>
+                <div>
+                  <span>Checkout starts</span>
+                  <strong>{analytics.metrics.checkoutStarts}</strong>
+                </div>
+                <div>
+                  <span>Active users</span>
+                  <strong>{analytics.metrics.activeUsers}</strong>
+                </div>
+              </div>
+            </article>
+
+            <article>
+              <div className="productRow">
+                <div>
+                  <span>Product sales ranking</span>
+                  <h2>Top products</h2>
+                </div>
+              </div>
+              <div className="marketingTable compact">
+                {analytics.productSales.map((item) => (
+                  <div key={item.productId}>
+                    <strong>{item.productName}</strong>
+                    <span>{item.productSlug}</span>
+                    <span>{item.quantity} sold</span>
+                    <span>CNY {item.revenue}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article>
+              <div className="productRow">
+                <div>
+                  <span>Traffic source analysis</span>
+                  <h2>Sources and behavior</h2>
+                </div>
+              </div>
+              <div className="splitTables">
+                <div className="marketingTable compact">
+                  {analytics.trafficSources.map((source) => (
+                    <div key={source.source}>
+                      <strong>{source.source}</strong>
+                      <span>Traffic</span>
+                      <span>{source.count}</span>
+                      <span>events</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="marketingTable compact">
+                  {analytics.behaviorEvents.map((event) => (
+                    <div key={event.eventType}>
+                      <strong>{event.eventType}</strong>
+                      <span>Behavior</span>
+                      <span>{event.count}</span>
+                      <span>events</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </article>
+
+            <article>
+              <div className="productRow">
+                <div>
+                  <span>Daily sales amount</span>
+                  <h2>Sales trend</h2>
+                </div>
+              </div>
+              <div className="marketingTable compact">
+                {analytics.dailySales.map((day) => (
+                  <div key={day.date}>
+                    <strong>{day.date}</strong>
+                    <span>Revenue</span>
+                    <span>CNY {day.revenue}</span>
+                    <span>{day.orders} order(s)</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </section>
+        ) : null}
+
+        {analytics ? (
+          <section className="table" id="launch" aria-label="Launch readiness">
+            <div className="sectionHeader">
+              <div>
+                <p>Security, backup and deployment</p>
+                <h2>Launch readiness</h2>
+              </div>
+            </div>
+
+            <article>
+              <div className="productRow">
+                <div>
+                  <span>Security checklist</span>
+                  <h2>Production checks</h2>
+                </div>
+              </div>
+              <div className="marketingTable compact">
+                {analytics.securityChecklist.map((item) => (
+                  <div key={item.key}>
+                    <strong>{item.label}</strong>
+                    <span>{item.key}</span>
+                    <span>{item.status}</span>
+                    <span>Stage 7</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article>
+              <div className="productRow">
+                <div>
+                  <span>Backup and policies</span>
+                  <h2>Deployment assets</h2>
+                </div>
+              </div>
+              <div className="marketingTable compact">
+                <div>
+                  <strong>{analytics.launchReadiness.backupCommand}</strong>
+                  <span>Database backup</span>
+                  <span>PowerShell script</span>
+                  <span>Git ignored output</span>
+                </div>
+                <div>
+                  <strong>{analytics.launchReadiness.deploymentGuide}</strong>
+                  <span>Deployment guide</span>
+                  <span>HTTPS and env</span>
+                  <span>Required</span>
+                </div>
+                <div>
+                  <strong>{analytics.launchReadiness.privacyPolicy}</strong>
+                  <span>Privacy policy</span>
+                  <span>Storefront</span>
+                  <span>Linked</span>
+                </div>
+                <div>
+                  <strong>{analytics.launchReadiness.termsOfService}</strong>
+                  <span>User agreement</span>
+                  <span>Storefront</span>
+                  <span>Linked</span>
+                </div>
+              </div>
+            </article>
+          </section>
+        ) : null}
 
         <form className="editor" id="products" onSubmit={(event) => void createProduct(event)}>
           <input aria-label="Product name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
