@@ -106,7 +106,7 @@ export function AccountMenu() {
     setIsSubmitting(false);
 
     if (!response.ok) {
-      setMessage("Could not authenticate with those details.");
+      setMessage("邮箱或密码不正确，请重试。");
       return;
     }
 
@@ -180,32 +180,51 @@ export function AccountMenu() {
             role="dialog"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <button className="modalClose" type="button" aria-label="Close" onClick={() => setIsModalOpen(false)}>
-              x
-            </button>
-            <span>Account</span>
-            <h2>{authMode === "login" ? "Login" : "Register"}</h2>
-            <div className="categoryTabs compactTabs">
-              <button className={authMode === "login" ? "active" : ""} type="button" onClick={() => setAuthMode("login")}>
-                Login
-              </button>
-              <button
-                className={authMode === "register" ? "active" : ""}
-                type="button"
-                onClick={() => setAuthMode("register")}
-              >
-                Register
-              </button>
-            </div>
+            <h2>{authMode === "login" ? "登录" : "注册"}</h2>
+            <p className="authIntro">
+              {authMode === "login"
+                ? "使用邮箱和密码登录，继续创建 AI 图片。"
+                : "创建账号后会获得初始积分，用于体验图片生成。"}
+            </p>
             <form className="formStack" onSubmit={(event) => void submitAuth(event)}>
-              {authMode === "register" ? <input name="name" placeholder="Name" required /> : null}
-              <input name="email" placeholder="Email" required type="email" />
-              <input minLength={8} name="password" placeholder="Password" required type="password" />
-              <button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Submitting..." : authMode === "login" ? "Login" : "Register"}
+              <label className="authField">
+                邮箱
+                <input name="email" placeholder="user@example.com" required type="email" />
+              </label>
+              {authMode === "register" ? (
+                <label className="authField">
+                  用户名
+                  <input name="name" placeholder="demo" required />
+                </label>
+              ) : null}
+              <label className="authField">
+                密码
+                <input
+                  minLength={6}
+                  name="password"
+                  placeholder={authMode === "login" ? "请输入密码" : "至少 6 个字符"}
+                  required
+                  type="password"
+                />
+              </label>
+              <button className="authSubmit" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "提交中..." : authMode === "login" ? "登录" : "注册"}
               </button>
             </form>
             {message ? <p className="formMessage">{message}</p> : null}
+            <p className="authSwitch">
+              {authMode === "login" ? "还没有账号？" : "已有账号？"}
+              <button
+                className="authSwitchButton"
+                type="button"
+                onClick={() => {
+                  setMessage("");
+                  setAuthMode(authMode === "login" ? "register" : "login");
+                }}
+              >
+                {authMode === "login" ? "去注册" : "去登录"}
+              </button>
+            </p>
           </section>
         </div>
       ) : null}

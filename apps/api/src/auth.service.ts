@@ -136,8 +136,8 @@ export class AuthService {
   }
 
   private validatePassword(password?: string) {
-    if (!password || password.length < 8) {
-      throw new BadRequestException("password must be at least 8 characters");
+    if (!password || password.length < 6) {
+      throw new BadRequestException("password must be at least 6 characters");
     }
   }
 
@@ -177,4 +177,3 @@ export class AuthService {
     };
   }
 }
-
